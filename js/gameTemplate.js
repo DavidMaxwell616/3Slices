@@ -1,7 +1,4 @@
 let game;
-let levelData = [];
-let polygon;
-let polygons = [];
 window.onload = function () {
   let gameConfig = {
     type: Phaser.AUTO,
@@ -30,27 +27,7 @@ class playGame extends Phaser.Scene {
   constructor() {
     super("PlayGame");
   }
-
-  preload() {
-    this.load.json('levelData', 'assets/map.json');
-  }
-
   create() {
-
-    let data = this.cache.json.get('levelData').levels;
-    for (let index = 0; index < data.length; index++) {
-      var level = {
-        level: index + 1,
-        scoreTargets: data[index][0],
-        type: data[index][5],
-        polygons: data[index][11]
-      }
-      console.log(level);
-      levelData.push(level);
-    }
-    //      console.log(data[i]);
-
-    return;
     this.matter.world.update30Hz();
     this.matter.world.setBounds(10, 10, game.config.width - 20, game.config.height - 20);
     this.matter.add.rectangle(game.config.width / 2 - 50, game.config.width / 2, 100, 300);
