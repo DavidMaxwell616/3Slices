@@ -2,6 +2,13 @@ let game;
 let levelData = [];
 let polygon;
 let polygons = [];
+let startGame = false;
+let lvlButtons = [];
+let alreadyShowingMenu = false;
+let levelMarkerData = [];
+var titleShadow;
+var title;
+
 window.onload = function () {
   let gameConfig = {
     type: Phaser.AUTO,
@@ -33,22 +40,47 @@ class playGame extends Phaser.Scene {
 
   preload() {
     this.load.json('levelData', 'assets/map.json');
+    this.load.image('do_over', 'assets/images/do_over.png');
+    this.load.image('go_back', 'assets/images/go_back.png');
+    this.load.image('level_marker', 'assets/images/level_marker.png');
+    this.load.image('play_button', 'assets/images/play_button.png');
+    this.load.image('title', 'assets/images/title.png');
   }
 
   create() {
-
+    this.cameras.main.setBackgroundColor(0x666666);
     let data = this.cache.json.get('levelData').levels;
-    for (let index = 0; index < data.length; index++) {
+    for (let index = 0; index < 1; index++) {
       var level = {
         level: index + 1,
-        scoreTargets: data[index][0],
-        type: data[index][5],
-        polygons: data[index][11]
+        scoreTargets: [],
+        polygons: []
       }
-      console.log(level);
+      for (var i = 0; i < 4; i++) {
+        level.scoreTargets.push(data[index][i]);
+      }
+
+      for (var i = 4; i < data[index].length; i++) {
+        var poly = {
+          startX: data[index][i][0],
+          startY: data[index][i][1],
+          endX: data[index][i][2],
+          endY: data[index][i][3],
+          offset: data[index][i][4],
+          dynamic: data[index][i][5],
+          type: data[index][i][6],
+          anchorX: data[index][i][7],
+          anchorY: data[index][i][8],
+          anchorZ: data[index][i][9],
+          color: data[index][i][10],
+          coordinates: data[index][i][11],
+        }
+        level.polygons.push(poly);
+      }
+      //  console.log(level);
       levelData.push(level);
     }
-    //      console.log(data[i]);
+    //console.log(levelData);
 
     return;
     this.matter.world.update30Hz();
@@ -110,4 +142,52 @@ class playGame extends Phaser.Scene {
       });
     }.bind(this))
   }
+
+  update() {
+    if (!startGame) {
+      this.showMenu();
+      this.showUnlockedLevels();
+      return;
+    }
+    //console.log(title);
+    //this.titleShadow.visible = false;
+    //this.title.visible = false;
+  }
+
+  levelSelected(x, y) {
+    //console.log(x, y);
+    if (x == 1 && y == 1)
+      startGame = true;
+  }
+
+  showUnlockedLevels() {
+
+  }
+
+  showMenu() {
+    if (alreadyShowingMenu)
+      return;
+    titleShadow = this.add.image(325, 85, 'title').setScale(.5).setOrigin(0.5, 0.5).tint = 0x00;
+    title = this.add.image(320, 80, 'title').setScale(.5).setOrigin(0.5, 0.5);
+    for (let y = 1; y < 4; y++) {
+      for (let x = 1; x < 5; x++) {
+        const lvlButton = this.add.image(x * 125, y * 100 + 110, 'level_marker')
+          .setScale(.5)
+          .setOrigin(0.5, 0.5)
+          .setInteractive()
+          .on('pointerdown', () => this.levelSelected(x, y));
+        lvlButtons.push(lvlButton);
+        var levelMarker = {
+          levelX: x,
+          levelY: y,
+          unlocked: false,
+          percent: 0,
+        }
+        levelMarkerData.push(levelMarker);
+      }
+    }
+    // console.log(levelMarkerData);
+    alreadyShowingMenu = true;
+  }
+
 };
