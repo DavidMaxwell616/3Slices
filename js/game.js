@@ -3,11 +3,13 @@ let levelData = [];
 let polygon;
 let polygons = [];
 let startGame = false;
-let lvlButtons = [];
-let alreadyShowingMenu = false;
+var menu;
+let maxxdaddy;
+let title;
+let titleShadow;
 let levelMarkerData = [];
-var titleShadow;
-var title;
+let text = [];
+let selectedLevel = 0;
 
 window.onload = function () {
   let gameConfig = {
@@ -45,6 +47,8 @@ class playGame extends Phaser.Scene {
     this.load.image('level_marker', 'assets/images/level_marker.png');
     this.load.image('play_button', 'assets/images/play_button.png');
     this.load.image('title', 'assets/images/title.png');
+    this.load.image('titleShadow', 'assets/images/titleShadow.png');
+    this.load.image('maxxdaddy', 'assets/images/maxxdaddy.gif');
   }
 
   create() {
@@ -81,20 +85,15 @@ class playGame extends Phaser.Scene {
       levelData.push(level);
     }
     //console.log(levelData);
-
-    return;
+    this.buildMenu();
+    maxxdaddy = this.add.image(this.game.config.width * 0.9, this.game.config.height * 0.95, 'maxxdaddy');
     this.matter.world.update30Hz();
-    this.matter.world.setBounds(10, 10, game.config.width - 20, game.config.height - 20);
-    this.matter.add.rectangle(game.config.width / 2 - 50, game.config.width / 2, 100, 300);
-    this.lineGraphics = this.add.graphics();
-    this.input.on("pointerdown", this.startDrawing, this);
-    this.input.on("pointerup", this.stopDrawing, this);
-    this.input.on("pointermove", this.keepDrawing, this);
-    this.isDrawing = false;
   }
+
   startDrawing() {
     this.isDrawing = true;
   }
+
   keepDrawing(pointer) {
     if (this.isDrawing) {
       this.lineGraphics.clear();
@@ -145,30 +144,58 @@ class playGame extends Phaser.Scene {
 
   update() {
     if (!startGame) {
-      this.showMenu();
-      this.showUnlockedLevels();
+      this.showMenu(true);
       return;
     }
+    buildLevel();
+
+    this.matter.world.setBounds(10, 10, game.config.width - 20, game.config.height - 20);
+    this.matter.add.rectangle(game.config.width / 2 - 50, game.config.width / 2, 100, 300);
+    this.lineGraphics = this.add.graphics();
+    this.input.on("pointerdown", this.startDrawing, this);
+    this.input.on("pointerup", this.stopDrawing, this);
+    this.input.on("pointermove", this.keepDrawing, this);
+    this.isDrawing = false;
+
+
     //console.log(title);
     //this.titleShadow.visible = false;
     //this.title.visible = false;
   }
 
   levelSelected(x, y) {
-    //console.log(x, y);
-    if (x == 1 && y == 1)
-      startGame = true;
+    startGame = true;
+    this.showMenu(false);
   }
 
-  showUnlockedLevels() {
-
-  }
-
-  showMenu() {
-    if (alreadyShowingMenu)
+  showMenu(onOff) {
+    menu.visible = onOff;
+    if (!onOff) {
+      for (let index = 0; index < text.length; index++) {
+        text[index].destroy();
+      }
       return;
-    titleShadow = this.add.image(325, 85, 'title').setScale(.5).setOrigin(0.5, 0.5).tint = 0x00;
+    }
+    for (let y = 1; y < 4; y++) {
+      for (let x = 1; x < 5; x++) {
+        let i = 1;
+        if (levelMarkerData[i].unlocked) {
+          var lvlText = this.add.text(levelMarkerData[i].x - 10, levelMarkerData[i].y - 35, levelMarkerData[i].level, {
+            fontFamily: 'Arial',
+            fontSize: 32,
+            color: '#ffffff'
+          });
+          text.push(lvlText);
+        }
+      }
+    }
+  }
+
+  buildMenu() {
+    titleShadow = this.add.image(325, 85, 'titleShadow').setScale(.5).setOrigin(0.5, 0.5);
     title = this.add.image(320, 80, 'title').setScale(.5).setOrigin(0.5, 0.5);
+    let i = 1;
+    let lvlButtons = [];
     for (let y = 1; y < 4; y++) {
       for (let x = 1; x < 5; x++) {
         const lvlButton = this.add.image(x * 125, y * 100 + 110, 'level_marker')
@@ -178,16 +205,24 @@ class playGame extends Phaser.Scene {
           .on('pointerdown', () => this.levelSelected(x, y));
         lvlButtons.push(lvlButton);
         var levelMarker = {
-          levelX: x,
-          levelY: y,
+          level: i,
+          x: x * 125,
+          y: y * 100 + 110,
           unlocked: false,
           percent: 0,
         }
+        if (x == 1 && y == 1)
+          levelMarker.unlocked = true;
         levelMarkerData.push(levelMarker);
+        i++;
       }
     }
-    // console.log(levelMarkerData);
-    alreadyShowingMenu = true;
+    // console.log(this);
+    menu = this.add.container(0, 0); //, [titleShadow, title, lvlButtons, levelMarkerData]);
+    menu.add(titleShadow);
+    menu.add(title);
+    menu.add(lvlButtons);
+    menu.visible = false;
   }
 
 };
