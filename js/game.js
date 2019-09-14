@@ -12,6 +12,10 @@ let text = [];
 let currentLevel = 0;
 let levelBuilt = false;
 let polys = [];
+let slices = 3;
+let target = 0;
+let completed = 0;
+
 
 window.onload = function () {
   let gameConfig = {
@@ -151,8 +155,42 @@ class playGame extends Phaser.Scene {
     }
     if (!levelBuilt)
       this.buildLevel(currentLevel);
+    this.showStatus();
 
+  }
 
+  showStatus() {
+    var lvlText = this.add.text(
+      10, 10,
+      'Level:' + levelMarkerData[i].level, {
+        fontFamily: 'Arial',
+        fontSize: 16,
+        color: '#ffffff'
+      });
+
+    var slices = this.add.text(
+      this.game.config.width - 100, 10,
+      'Slices Left:' + levelMarkerData[i].slicesLeft, {
+        fontFamily: 'Arial',
+        fontSize: 16,
+        color: '#ffffff'
+      });
+
+    var target = this.add.text(
+      10, this.game.config.height - 50,
+      'Target:' + levelMarkerData[i].target + '%', {
+        fontFamily: 'Arial',
+        fontSize: 16,
+        color: '#ffffff'
+      });
+
+    var removed = this.add.text(
+      this.game.config.width - 100, this.game.config.height - 50,
+      'Removed:' + levelMarkerData[i].percent + '%', {
+        fontFamily: 'Arial',
+        fontSize: 16,
+        color: '#ffffff'
+      });
   }
 
   levelSelected(x, y) {
@@ -168,25 +206,45 @@ class playGame extends Phaser.Scene {
   buildLevel(currentLevel) {
     const curLvl = levelData[currentLevel - 1];
     const curPolys = curLvl.polygons;
-    for (let index = 0; index < 1; index++) {
+    for (let index = 0; index < curPolys.length; index++) {
       var polygon = new Phaser.Geom.Polygon(curPolys[index].coordinates);
+      let reverse = curPolys[index].dynamic ? -1 : 1;
+      let x = curPolys[index].startX;
+      let y = curPolys[index].startY;
+      for (var i = 0; i < polygon.points.length; i++) {
+        polygon.points[i].x = x + (polygon.points[i].x * reverse);
+        polygon.points[i].y = y + (polygon.points[i].y * reverse);
+      }
 
       var graphics = this.add.graphics({
         x: 0,
         y: 0
       });
+      let fillColor;
+      switch (curPolys[index].color) {
+        case "red":
+          fillColor = '0xff0000';
+          break;
+        case "blue":
+          fillColor = '0x0000ff';
+          break;
+        case "white":
+          fillColor = '0xffffff';
+          break;
+        default:
+          fillColor = '0x000000'
+          break;
+      }
+
+      graphics.fillStyle(fillColor);
+      graphics.fillPoints(polygon.points, true);
 
       graphics.lineStyle(2, 0x00);
       graphics.beginPath();
-      graphics.moveTo(curPolys[index].startX, curPolys[index].startY);
+      graphics.moveTo(x, y);
       for (var i = 0; i < polygon.points.length; i++) {
-        let x = curPolys[index].startX;
-        let y = curPolys[index].startY;
-        graphics.lineTo(x + polygon.points[i].x, y + polygon.points[i].y);
-        console.log(x + polygon.points[i].x, y + polygon.points[i].y);
+        graphics.lineTo(polygon.points[i].x, polygon.points[i].y);
       }
-      // console.log(curPolys[index].startX, curPolys[index].startY);
-      // console.log(polygon);
 
       graphics.closePath();
       graphics.strokePath();
@@ -194,7 +252,7 @@ class playGame extends Phaser.Scene {
     }
 
     //this.matter.world.setBounds(10, 10, game.config.width - 20, game.config.height - 20);
-    // this.matter.add.rectangle(game.config.width / 2 - 50, game.config.width / 2, 100, 300);
+    this.matter.add.rectangle(polygon.points);
     this.lineGraphics = this.add.graphics();
     this.input.on("pointerdown", this.startDrawing, this);
     this.input.on("pointerup", this.stopDrawing, this);
@@ -211,23 +269,25 @@ class playGame extends Phaser.Scene {
       }
       return;
     }
-    for (let y = 1; y < 4; y++) {
-      for (let x = 1; x < 5; x++) {
-        if (levelMarkerData[i - 1].unlocked) {
+    for (let y = 1; y <= 4; y++) {
+      for (let x = 1; x <= 5; x++) {
+        let i = this.getLevel(x, y) - 1;
+        if (levelMarkerData[i].unlocked) {
+
           var lvlText = this.add.text(
-            levelMarkerData[i].x - 10,
-            levelMarkerData[i].y - 35,
+            levelMarkerData[i].x - 25,
+            levelMarkerData[i].y - 30,
             levelMarkerData[i].level, {
               fontFamily: 'Arial',
-              fontSize: 32,
+              fontSize: 24,
               color: '#ffffff'
             });
           var lvlText2 = this.add.text(
-            levelMarkerData[i].x - 10,
-            levelMarkerData[i].y - 45,
-            levelMarkerData[i].percent, {
+            levelMarkerData[i].x - 25,
+            levelMarkerData[i].y,
+            levelMarkerData[i].percent + '%', {
               fontFamily: 'Arial',
-              fontSize: 32,
+              fontSize: 16,
               color: '#ffffff'
             });
           text.push(lvlText);
@@ -242,10 +302,10 @@ class playGame extends Phaser.Scene {
     title = this.add.image(320, 80, 'title').setScale(.5).setOrigin(0.5, 0.5);
     let i = 1;
     let lvlButtons = [];
-    for (let y = 1; y < 4; y++) {
-      for (let x = 1; x < 5; x++) {
-        const lvlButton = this.add.image(x * 125, y * 100 + 110, 'level_marker')
-          .setScale(.5)
+    for (let y = 1; y <= 4; y++) {
+      for (let x = 1; x <= 5; x++) {
+        const lvlButton = this.add.image(x * 105, y * 100 + 110, 'level_marker')
+          .setScale(.4)
           .setOrigin(0.5, 0.5)
           .setInteractive()
           .on('pointerdown', () => this.levelSelected(x, y));
@@ -256,6 +316,8 @@ class playGame extends Phaser.Scene {
           y: y * 100 + 110,
           unlocked: false,
           percent: 0,
+          target: 100,
+          slicesLeft: 3,
         }
         levelMarkerData.push(levelMarker);
         if (levelMarker.level == 1)
