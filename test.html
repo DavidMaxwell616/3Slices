@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <script src="js/phaser.3.18.1.min.js"></script>
+  <script src="js/polyk.js"></script>
+</head>
+
+<body>
+  <div id="thegame"></div>
+  <script>
+    let game;
+    let levelData = [];
+    let polys = [];
+    let levelBuilt = false;
+    window.onload = function () {
+      let gameConfig = {
+        type: Phaser.AUTO,
+        backgroundColor: 0x666666,
+        scale: {
+          mode: Phaser.Scale.FIT,
+          autoCenter: Phaser.Scale.CENTER_BOTH,
+          parent: "thegame",
+          width: 640,
+          height: 480
+        },
+        scene: playGame,
+        physics: {
+          default: "matter",
+          matter: {
+            gravity: {
+              y: 1
+            },
+            debug: true,
+          }
+        }
+      }
+      game = new Phaser.Game(gameConfig);
+      window.focus();
+    }
+    class playGame extends Phaser.Scene {
+      constructor() {
+        super("PlayGame");
+      }
+
+      preload() {
+        this.load.json('levelData', 'assets/map.json');
+      }
+
+      updateData() {
+        let data = this.cache.json.get('levelData').levels;
+        for (let index = 0; index < data.length; index++) {
+          var level = {
+            level: index + 1,
+            scoreTargets: [],
+            polygons: []
+          }
+          for (var i = 0; i < 4; i++) {
+            level.scoreTargets.push(data[index][i]);
+          }
+
+          for (var i = 4; i < data[index].length; i++) {
+            var poly = {
+              startX: data[index][i][0],
+              startY: data[index][i][1],
+              endX: data[index][i][2],
+              endY: data[index][i][3],
+              offset: data[index][i][4],
+              dynamic: data[index][i][5],
+              type: data[index][i][6],
+              anchorX: data[index][i][7],
+              anchorY: data[index][i][8],
+              anchorZ: data[index][i][9],
+              color: data[index][i][10],
+              coordinates: data[index][i][11],
+            }
+            level.polygons.push(poly);
+          }
+          //  console.log(level);
+          levelData.push(level);
+        }
+      }
+
+      create() {
+        this.updateData();
+        this.matter.world.update30Hz();
+        this.buildLevel(1);
+      }
+
+      buildLevel(currentLevel) {
+        const curLvl = levelData[currentLevel - 1];
+        const curPolys = curLvl.polygons;
+        for (let index = 0; index < curPolys.length; index++) {
+          var polygon = new Phaser.Geom.Polygon(curPolys[index]
+            .coordinates);
+          let reverse = curPolys[index].dynamic ? -1 : 1;
+          let x = curPolys[index].startX;
+          let y = curPolys[index].startY;
+          for (var i = 0; i < polygon.points.length; i++) {
+            polygon.points[i].x = x + (polygon.points[i].x * reverse);
+            polygon.points[i].y = y + (polygon.points[i].y * reverse);
+          }
+          var graphics = this.add.graphics();
+
+          let fillColor;
+          switch (curPolys[index].color) {
+            case "red":
+              fillColor = '0xff0000';
+              break;
+            case "blue":
+              fillColor = '0x0000ff';
+              break;
+            case "white":
+              fillColor = '0xffffff';
+              break;
+            default:
+              fillColor = '0x000000'
+              break;
+          }
+
+          graphics.fillStyle(fillColor);
+          graphics.fillPoints(polygon.points, true);
+
+          graphics.lineStyle(2, 0x00);
+          graphics.beginPath();
+          graphics.moveTo(x, y);
+          for (var i = 0; i < polygon.points.length; i++) {
+            graphics.lineTo(polygon.points[i].x, polygon.points[i]
+              .y);
+          }
+          //          this.matter.add.polygon(0, 0, polygon.points);
+          var poly = this.add.polygon(0, 0, polygon.points, fillColor, 0.8)
+            .setOrigin(0, 0);
+          this.matter.add.gameObject(poly);
+
+          graphics.closePath();
+          graphics.strokePath();
+          polys.push(curPolys);
+        }
+        this.input.on("pointerdown", this.startDrawing, this);
+        this.input.on("pointerup", this.stopDrawing, this);
+        this.input.on("pointermove", this.keepDrawing, this);
+        this.isDrawing = false;
+        levelBuilt = true;
+      }
+
+
+      startDrawing() {
+        this.isDrawing = true;
+      }
+      keepDrawing(pointer) {
+        if (this.isDrawing) {
+          this.lineGraphics.clear();
+          this.lineGraphics.lineStyle(1, 0x00ff00);
+          this.lineGraphics.moveTo(pointer.downX, pointer.downY);
+          this.lineGraphics.lineTo(pointer.x, pointer.y);
+          this.lineGraphics.strokePath();
+        }
+      }
+      stopDrawing(pointer) {
+        this.lineGraphics.clear();
+        this.isDrawing = false;
+        let bodies = this.matter.world.localWorld.bodies;
+        let toBeSliced = [];
+        let toBeCreated = [];
+        for (let i = 0; i < bodies.length; i++) {
+          let vertices = bodies[i].parts[0].vertices;
+          let pointsArray = [];
+          vertices.forEach(function (vertex) {
+            pointsArray.push(vertex.x, vertex.y)
+          });
+          let slicedPolygons = PolyK.Slice(pointsArray, pointer.downX,
+            pointer.downY, pointer.upX, pointer.upY);
+          if (slicedPolygons.length > 1) {
+            toBeSliced.push(bodies[i]);
+            slicedPolygons.forEach(function (points) {
+              toBeCreated.push(points)
+            })
+
+          }
+        }
+        toBeSliced.forEach(function (body) {
+          this.matter.world.remove(body)
+        }.bind(this))
+        toBeCreated.forEach(function (points) {
+          let polyObject = [];
+          for (let i = 0; i < points.length / 2; i++) {
+            polyObject.push({
+              x: points[i * 2],
+              y: points[i * 2 + 1]
+            })
+          }
+          let sliceCentre = Phaser.Physics.Matter.Matter.Vertices
+            .centre(polyObject)
+          let slicedBody = this.matter.add.fromVertices(sliceCentre
+            .x,
+            sliceCentre.y, polyObject, {
+              isStatic: false
+            });
+        }.bind(this))
+      }
+    };
+  </script>
+</body>
+
+</html>

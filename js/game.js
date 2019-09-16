@@ -60,7 +60,7 @@ class playGame extends Phaser.Scene {
   create() {
     this.cameras.main.setBackgroundColor(0x666666);
     let data = this.cache.json.get('levelData').levels;
-    for (let index = 0; index < 1; index++) {
+    for (let index = 0; index < data.length; index++) {
       var level = {
         level: index + 1,
         scoreTargets: [],
@@ -93,7 +93,6 @@ class playGame extends Phaser.Scene {
     }
     this.buildMenu();
     //maxxdaddy = this.add.image(this.game.config.width * 0.9, this.game.config.height * 0.95, 'maxxdaddy');
-    this.matter.world.update30Hz();
   }
 
   startDrawing() {
@@ -153,8 +152,10 @@ class playGame extends Phaser.Scene {
       this.showMenu(true);
       return;
     }
-    if (!levelBuilt)
+    if (!levelBuilt) {
+      this.matter.world.setBounds(10, 10, game.config.width - 20, game.config.height - 20);
       this.buildLevel(currentLevel);
+    }
     this.showStatus();
 
   }
@@ -251,7 +252,7 @@ class playGame extends Phaser.Scene {
       polys.push(curPolys);
     }
 
-    //this.matter.world.setBounds(10, 10, game.config.width - 20, game.config.height - 20);
+    this.matter.world.update30Hz();
     this.matter.add.rectangle(polygon.points);
     this.lineGraphics = this.add.graphics();
     this.input.on("pointerdown", this.startDrawing, this);
