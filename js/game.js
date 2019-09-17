@@ -88,7 +88,6 @@ class playGame extends Phaser.Scene {
         }
         level.polygons.push(poly);
       }
-      //  console.log(level);
       levelData.push(level);
     }
     this.buildMenu();
@@ -153,7 +152,7 @@ class playGame extends Phaser.Scene {
       return;
     }
     if (!levelBuilt) {
-      this.matter.world.setBounds(10, 10, game.config.width - 20, game.config.height - 20);
+      //this.matter.world.setBounds(10, 10, game.config.width - 20, game.config.height - 20);
       this.buildLevel(currentLevel);
     }
     this.showStatus();
@@ -163,7 +162,7 @@ class playGame extends Phaser.Scene {
   showStatus() {
     var lvlText = this.add.text(
       10, 10,
-      'Level:' + levelMarkerData[i].level, {
+      'Level:' + currentLevel, {
         fontFamily: 'Arial',
         fontSize: 16,
         color: '#ffffff'
@@ -208,13 +207,14 @@ class playGame extends Phaser.Scene {
     const curLvl = levelData[currentLevel - 1];
     const curPolys = curLvl.polygons;
     for (let index = 0; index < curPolys.length; index++) {
-      var polygon = new Phaser.Geom.Polygon(curPolys[index].coordinates);
       let reverse = curPolys[index].dynamic ? -1 : 1;
       let x = curPolys[index].startX;
       let y = curPolys[index].startY;
-      for (var i = 0; i < polygon.points.length; i++) {
-        polygon.points[i].x = x + (polygon.points[i].x * reverse);
-        polygon.points[i].y = y + (polygon.points[i].y * reverse);
+      var data = curPolys[index].coordinates;
+      var polygon = this.add.polygon(x, y, data, 0x0000ff, 0.8);
+      for (var i = 0; i < polygon.geom.points.length; i++) {
+        polygon.geom.points[i].x = x + (polygon.geom.points[i].x * reverse);
+        polygon.geom.points[i].y = y + (polygon.geom.points[i].y * reverse);
       }
 
       var graphics = this.add.graphics({
@@ -238,22 +238,23 @@ class playGame extends Phaser.Scene {
       }
 
       graphics.fillStyle(fillColor);
-      graphics.fillPoints(polygon.points, true);
+      graphics.fillPoints(polygon.geom.points, true);
 
       graphics.lineStyle(2, 0x00);
       graphics.beginPath();
       graphics.moveTo(x, y);
-      for (var i = 0; i < polygon.points.length; i++) {
-        graphics.lineTo(polygon.points[i].x, polygon.points[i].y);
+      for (var i = 0; i < polygon.geom.points.length; i++) {
+        graphics.lineTo(polygon.geom.points[i].x, polygon.geom.points[i].y);
       }
 
       graphics.closePath();
       graphics.strokePath();
       polys.push(curPolys);
+      this.matter.add.gameObject(polygon);
     }
 
     this.matter.world.update30Hz();
-    this.matter.add.rectangle(polygon.points);
+    //this.matter.add.rectangle(polygon.points);
     this.lineGraphics = this.add.graphics();
     this.input.on("pointerdown", this.startDrawing, this);
     this.input.on("pointerup", this.stopDrawing, this);
@@ -274,7 +275,6 @@ class playGame extends Phaser.Scene {
       for (let x = 1; x <= 5; x++) {
         let i = this.getLevel(x, y) - 1;
         if (levelMarkerData[i].unlocked) {
-
           var lvlText = this.add.text(
             levelMarkerData[i].x - 25,
             levelMarkerData[i].y - 30,
@@ -299,13 +299,13 @@ class playGame extends Phaser.Scene {
   }
 
   buildMenu() {
-    titleShadow = this.add.image(325, 85, 'titleShadow').setScale(.5).setOrigin(0.5, 0.5);
-    title = this.add.image(320, 80, 'title').setScale(.5).setOrigin(0.5, 0.5);
+    titleShadow = this.add.image(325, 55, 'titleShadow').setScale(.3).setOrigin(0.5, 0.5);
+    title = this.add.image(320, 50, 'title').setScale(.3).setOrigin(0.5, 0.5);
     let i = 1;
     let lvlButtons = [];
     for (let y = 1; y <= 4; y++) {
       for (let x = 1; x <= 5; x++) {
-        const lvlButton = this.add.image(x * 105, y * 100 + 110, 'level_marker')
+        const lvlButton = this.add.image(x * 105, y * 100 + 30, 'level_marker')
           .setScale(.4)
           .setOrigin(0.5, 0.5)
           .setInteractive()
@@ -313,15 +313,15 @@ class playGame extends Phaser.Scene {
         lvlButtons.push(lvlButton);
         var levelMarker = {
           level: i,
-          x: x * 125,
-          y: y * 100 + 110,
+          x: x * 105 + 20,
+          y: y * 100 + 30,
           unlocked: false,
           percent: 0,
           target: 100,
           slicesLeft: 3,
         }
         levelMarkerData.push(levelMarker);
-        if (levelMarker.level == 1)
+        if (levelMarker.level < 6)
           levelMarker.unlocked = true;
         i++;
       }
