@@ -32,7 +32,7 @@ window.onload = function () {
       default: "matter",
       matter: {
         gravity: {
-          y: 1
+          y: 3
         },
         debug: true,
       }
@@ -204,6 +204,7 @@ class playGame extends Phaser.Scene {
   }
 
   buildLevel(currentLevel) {
+    this.matter.world.setBounds();
     const curLvl = levelData[currentLevel - 1];
     const curPolys = curLvl.polygons;
     for (let index = 0; index < curPolys.length; index++) {
@@ -211,46 +212,41 @@ class playGame extends Phaser.Scene {
       let x = curPolys[index].startX;
       let y = curPolys[index].startY;
       var data = curPolys[index].coordinates;
-      var polygon = this.add.polygon(x, y, data, 0x0000ff, 0.8);
-      for (var i = 0; i < polygon.geom.points.length; i++) {
-        polygon.geom.points[i].x = x + (polygon.geom.points[i].x * reverse);
-        polygon.geom.points[i].y = y + (polygon.geom.points[i].y * reverse);
-      }
 
-      var graphics = this.add.graphics({
-        x: 0,
-        y: 0
-      });
-      let fillColor;
-      switch (curPolys[index].color) {
-        case "red":
-          fillColor = '0xff0000';
-          break;
-        case "blue":
-          fillColor = '0x0000ff';
-          break;
-        case "white":
-          fillColor = '0xffffff';
-          break;
-        default:
-          fillColor = '0x000000'
-          break;
-      }
+      const colorSwitch = (color) => ({
+        "red": "0xff0000",
+        "blue": "0x0000ff",
+        "white": "0xffffff",
+        "black": "0x000000"
+      })[color]
 
-      graphics.fillStyle(fillColor);
-      graphics.fillPoints(polygon.geom.points, true);
+      var polygon = this.add.polygon(x, y, data, colorSwitch(curPolys[index].color), 1);
 
-      graphics.lineStyle(2, 0x00);
-      graphics.beginPath();
-      graphics.moveTo(x, y);
-      for (var i = 0; i < polygon.geom.points.length; i++) {
-        graphics.lineTo(polygon.geom.points[i].x, polygon.geom.points[i].y);
-      }
+      // for (var i = 0; i < polygon.geom.points.length; i++) {
+      //   polygon.geom.points[i].x = x + (polygon.geom.points[i].x * reverse);
+      //   polygon.geom.points[i].y = y + (polygon.geom.points[i].y * reverse);
+      // }
+      polygon.setStrokeStyle(2, 0x00, 1);
+      // var graphics = this.add.graphics({
+      //   x: 0,
+      //   y: 0
+      // });
 
-      graphics.closePath();
-      graphics.strokePath();
-      polys.push(curPolys);
-      this.matter.add.gameObject(polygon);
+
+      // graphics.fillStyle(fillColor);
+      // graphics.fillPoints(polygon.geom.points, true);
+
+      // graphics.lineStyle(2, 0x00);
+      // graphics.beginPath();
+      // graphics.moveTo(x, y);
+      // for (var i = 0; i < polygon.geom.points.length; i++) {
+      //   graphics.lineTo(polygon.geom.points[i].x, polygon.geom.points[i].y);
+      // }
+
+      // graphics.closePath();
+      // graphics.strokePath();
+      // polys.push(curPolys);
+      this.matter.add.gameObject(polygon).setStatic(!curPolys[index].dynamic);
     }
 
     this.matter.world.update30Hz();
