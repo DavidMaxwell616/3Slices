@@ -34,7 +34,7 @@ window.onload = function () {
         gravity: {
           y: 3
         },
-        debug: true,
+        debug: false,
       }
     }
   }
@@ -219,33 +219,9 @@ class playGame extends Phaser.Scene {
         "white": "0xffffff",
         "black": "0x000000"
       })[color]
-
-      var polygon = this.add.polygon(x, y, data, colorSwitch(curPolys[index].color), 1);
-
-      // for (var i = 0; i < polygon.geom.points.length; i++) {
-      //   polygon.geom.points[i].x = x + (polygon.geom.points[i].x * reverse);
-      //   polygon.geom.points[i].y = y + (polygon.geom.points[i].y * reverse);
-      // }
-      polygon.setStrokeStyle(2, 0x00, 1);
-      // var graphics = this.add.graphics({
-      //   x: 0,
-      //   y: 0
-      // });
-
-
-      // graphics.fillStyle(fillColor);
-      // graphics.fillPoints(polygon.geom.points, true);
-
-      // graphics.lineStyle(2, 0x00);
-      // graphics.beginPath();
-      // graphics.moveTo(x, y);
-      // for (var i = 0; i < polygon.geom.points.length; i++) {
-      //   graphics.lineTo(polygon.geom.points[i].x, polygon.geom.points[i].y);
-      // }
-
-      // graphics.closePath();
-      // graphics.strokePath();
-      // polys.push(curPolys);
+      console.log(x, y, data);
+      var polygon = this.add.polygon(x, y, data, colorSwitch(curPolys[index].color));
+      polygon.setStrokeStyle(2, 0x00);
       this.matter.add.gameObject(polygon).setStatic(!curPolys[index].dynamic);
     }
 
