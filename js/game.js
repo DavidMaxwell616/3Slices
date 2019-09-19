@@ -228,6 +228,9 @@ class playGame extends Phaser.Scene {
       var polygon = this.add.polygon(x, y, data, colorSwitch(curPolys[index].color));
       polygon.setStrokeStyle(2, 0x00);
       this.matter.add.gameObject(polygon).setStatic(!curPolys[index].dynamic).setOrigin(0.5 * reverse, 0.5 * reverse);
+      polygon.body.density = 5;
+      polygon.body.friction = 0.2;
+      polygon.body.restitution = 0;
     }
 
     this.matter.world.update30Hz();
