@@ -34,7 +34,7 @@ window.onload = function () {
         gravity: {
           y: 3
         },
-        debug: false,
+        debug: true,
       }
     }
   }
@@ -75,8 +75,8 @@ class playGame extends Phaser.Scene {
         var poly = {
           startX: data[index][i][0],
           startY: data[index][i][1],
-          endX: data[index][i][2],
-          endY: data[index][i][3],
+          width: data[index][i][2],
+          height: data[index][i][3],
           offset: data[index][i][4],
           dynamic: data[index][i][5],
           type: data[index][i][6],
@@ -204,13 +204,14 @@ class playGame extends Phaser.Scene {
   }
 
   buildLevel(currentLevel) {
-    this.matter.world.setBounds();
+    this.cameras.main.setBackgroundColor(0xCCCCCC);
+    //this.matter.world.setBounds();
     const curLvl = levelData[currentLevel - 1];
     const curPolys = curLvl.polygons;
     for (let index = 0; index < curPolys.length; index++) {
       let reverse = curPolys[index].dynamic ? -1 : 1;
-      let x = curPolys[index].startX;
-      let y = curPolys[index].startY;
+      let x = curPolys[index].startX + (curPolys[index].width / 2) * reverse;
+      let y = curPolys[index].startY + (curPolys[index].height / 2) * reverse;
       var data = curPolys[index].coordinates;
 
       const colorSwitch = (color) => ({
@@ -219,10 +220,14 @@ class playGame extends Phaser.Scene {
         "white": "0xffffff",
         "black": "0x000000"
       })[color]
-      console.log(x, y, data);
+      //   console.log(x, y, data);
+      for (let i = 0; i < data.length; i++) {
+        data[i] *= reverse;
+
+      }
       var polygon = this.add.polygon(x, y, data, colorSwitch(curPolys[index].color));
       polygon.setStrokeStyle(2, 0x00);
-      this.matter.add.gameObject(polygon).setStatic(!curPolys[index].dynamic);
+      this.matter.add.gameObject(polygon).setStatic(!curPolys[index].dynamic).setOrigin(0.5 * reverse, 0.5 * reverse);
     }
 
     this.matter.world.update30Hz();
