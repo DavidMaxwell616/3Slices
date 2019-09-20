@@ -160,37 +160,29 @@ class playGame extends Phaser.Scene {
   }
 
   showStatus() {
+    var textFormat = {
+      fontFamily: 'Arial',
+      fontStyle: 'Bold',
+      fontSize: 16,
+      color: '#ffffff',
+      stroke: '#000000',
+      strokeThickness: 6,
+    };
+
     var lvlText = this.add.text(
-      10, 10,
-      'Level:' + currentLevel, {
-        fontFamily: 'Arial',
-        fontSize: 16,
-        color: '#ffffff'
-      });
+      10, 10, 'Level:' + currentLevel, textFormat);
 
     var slices = this.add.text(
       this.game.config.width - 100, 10,
-      'Slices Left:' + levelMarkerData[i].slicesLeft, {
-        fontFamily: 'Arial',
-        fontSize: 16,
-        color: '#ffffff'
-      });
+      'Slices Left:' + levelMarkerData[i].slicesLeft, textFormat);
 
     var target = this.add.text(
       10, this.game.config.height - 50,
-      'Target:' + levelMarkerData[i].target + '%', {
-        fontFamily: 'Arial',
-        fontSize: 16,
-        color: '#ffffff'
-      });
+      'Target:' + levelMarkerData[i].target + '%', textFormat);
 
     var removed = this.add.text(
       this.game.config.width - 100, this.game.config.height - 50,
-      'Removed:' + levelMarkerData[i].percent + '%', {
-        fontFamily: 'Arial',
-        fontSize: 16,
-        color: '#ffffff'
-      });
+      'Removed:' + levelMarkerData[i].percent + '%', textFormat);
   }
 
   levelSelected(x, y) {
@@ -211,7 +203,11 @@ class playGame extends Phaser.Scene {
     for (let index = 0; index < curPolys.length; index++) {
       let reverse = curPolys[index].dynamic ? -1 : 1;
       let x = curPolys[index].startX + (curPolys[index].width / 2) * reverse;
-      let y = curPolys[index].startY + (curPolys[index].height / 2) * reverse;
+
+      x += (this.game.config.width / 30) * reverse * -1;
+      let y = curPolys[index].startY + ((curPolys[index].height / 2) * reverse) - (curPolys[index].startY / 30);
+      //     let x = curPolys[index].startX + ((curPolys[index].width / 2) * reverse) + (curPolys[index].startX / 3);
+      //      let y = curPolys[index].startY + ((curPolys[index].height / 2) * reverse) - (curPolys[index].startY / 30);
       var data = curPolys[index].coordinates;
 
       const colorSwitch = (color) => ({
