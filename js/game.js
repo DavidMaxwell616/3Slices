@@ -15,7 +15,12 @@ let polys = [];
 let slices = 3;
 let target = 0;
 let completed = 0;
-
+const colorSwitch = (color) => ({
+  "red": "0xff0000",
+  "blue": "0x0000ff",
+  "white": "0xffffff",
+  "black": "0x000000"
+})[color]
 
 window.onload = function () {
   let gameConfig = {
@@ -47,7 +52,7 @@ class playGame extends Phaser.Scene {
   }
 
   preload() {
-    this.load.json('levelData', 'assets/map.json');
+    this.load.json('levelData', 'assets/map2.json');
     this.load.image('do_over', 'assets/images/do_over.png');
     this.load.image('go_back', 'assets/images/go_back.png');
     this.load.image('level_marker', 'assets/images/level_marker.png');
@@ -67,11 +72,11 @@ class playGame extends Phaser.Scene {
         polygons: []
       }
 
-      for (var i = 0; i < 4; i++) {
+      for (var i = 0; i < 3; i++) {
         level.scoreTargets.push(data[index][i]);
       }
 
-      for (var i = 4; i < data[index].length; i++) {
+      for (var i = 3; i < data[index].length; i++) {
         var poly = {
           startX: data[index][i][0],
           startY: data[index][i][1],
@@ -113,6 +118,8 @@ class playGame extends Phaser.Scene {
     let bodies = this.matter.world.localWorld.bodies;
     let toBeSliced = [];
     let toBeCreated = [];
+    let color;
+    let dynamic;
     for (let i = 0; i < bodies.length; i++) {
       let vertices = bodies[i].parts[0].vertices;
       let pointsArray = [];
@@ -129,6 +136,9 @@ class playGame extends Phaser.Scene {
       }
     }
     toBeSliced.forEach(function (body) {
+      color = body.gameObject.fillColor;
+      dynamic = !body.gameObject.isStatic;
+      body.gameObject.destroy();
       this.matter.world.remove(body)
     }.bind(this))
     toBeCreated.forEach(function (points) {
@@ -139,8 +149,10 @@ class playGame extends Phaser.Scene {
           y: points[i * 2 + 1]
         })
       }
-      let sliceCentre = Phaser.Physics.Matter.Matter.Vertices.centre(polyObject)
-      let slicedBody = this.matter.add.fromVertices(sliceCentre.x, sliceCentre.y, polyObject, {
+      let sliceCentre = Phaser.Physics.Matter.Matter.Vertices.centre(polyObject);
+      let reverse = dynamic ? -1 : 1;
+      let body = this.createBody(sliceCentre.x, sliceCentre.y, polyObject, color, dynamic, reverse);
+      body.body = this.matter.add.fromVertices(sliceCentre.x, sliceCentre.y, polyObject, {
         isStatic: false
       });
     }.bind(this))
@@ -210,23 +222,12 @@ class playGame extends Phaser.Scene {
       //      let y = curPolys[index].startY + ((curPolys[index].height / 2) * reverse) - (curPolys[index].startY / 30);
       var data = curPolys[index].coordinates;
 
-      const colorSwitch = (color) => ({
-        "red": "0xff0000",
-        "blue": "0x0000ff",
-        "white": "0xffffff",
-        "black": "0x000000"
-      })[color]
       //   console.log(x, y, data);
       for (let i = 0; i < data.length; i++) {
         data[i] *= reverse;
 
       }
-      var polygon = this.add.polygon(x, y, data, colorSwitch(curPolys[index].color));
-      polygon.setStrokeStyle(2, 0x00);
-      this.matter.add.gameObject(polygon).setStatic(!curPolys[index].dynamic).setOrigin(0.5 * reverse, 0.5 * reverse);
-      polygon.body.density = 5;
-      polygon.body.friction = 0.2;
-      polygon.body.restitution = 0;
+      this.createBody(x, y, data, colorSwitch(curPolys[index].color), curPolys[index].dynamic, reverse);
     }
 
     this.matter.world.update30Hz();
@@ -237,6 +238,16 @@ class playGame extends Phaser.Scene {
     this.input.on("pointermove", this.keepDrawing, this);
     this.isDrawing = false;
     levelBuilt = true;
+  }
+
+  createBody(x, y, data, color, dynamic, reverse) {
+    console.log(x, y, color, dynamic, reverse);
+    var polygon = this.add.polygon(x, y, data, color);
+    polygon.setStrokeStyle(2, 0x00);
+    this.matter.add.gameObject(polygon).setStatic(!dynamic).setOrigin(0.5 * reverse, 0.5 * reverse);
+    polygon.body.density = 5;
+    polygon.body.friction = 0.2;
+    polygon.body.restitution = 0;
   }
 
   showMenu(onOff) {
