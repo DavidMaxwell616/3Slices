@@ -52,7 +52,7 @@ class playGame extends Phaser.Scene {
   }
 
   preload() {
-    this.load.json('levelData', 'assets/map2.json');
+    this.load.json('levelData', 'assets/map1.json');
     this.load.image('do_over', 'assets/images/do_over.png');
     this.load.image('go_back', 'assets/images/go_back.png');
     this.load.image('level_marker', 'assets/images/level_marker.png');
@@ -118,30 +118,31 @@ class playGame extends Phaser.Scene {
     let bodies = this.matter.world.localWorld.bodies;
     let toBeSliced = [];
     let toBeCreated = [];
-    let color;
-    let dynamic;
     for (let i = 0; i < bodies.length; i++) {
-      let vertices = bodies[i].parts[0].vertices;
-      let pointsArray = [];
-      vertices.forEach(function (vertex) {
-        pointsArray.push(vertex.x, vertex.y)
-      });
-      let slicedPolygons = PolyK.Slice(pointsArray, pointer.downX, pointer.downY, pointer.upX, pointer.upY);
-      if (slicedPolygons.length > 1) {
-        toBeSliced.push(bodies[i]);
-        slicedPolygons.forEach(function (points) {
-          toBeCreated.push(points)
-        })
+      if (!bodies[i].isStatic) {
+        let vertices = bodies[i].parts[0].vertices;
+        let pointsArray = [];
+        vertices.forEach(function (vertex) {
+          pointsArray.push(vertex.x, vertex.y)
+        });
+        let slicedPolygons = PolyK.Slice(pointsArray, pointer.downX, pointer.downY, pointer.upX, pointer.upY);
+        if (slicedPolygons.length > 1) {
+          toBeSliced.push(bodies[i]);
+          slicedPolygons.forEach(function (points) {
+            toBeCreated.push(points)
+          })
 
+        }
       }
     }
+    let polyFill;
     toBeSliced.forEach(function (body) {
-      color = body.gameObject.fillColor;
-      dynamic = !body.gameObject.isStatic;
+      polyFill = body.gameObject.fillColor;
       body.gameObject.destroy();
-      this.matter.world.remove(body)
+      this.matter.world.remove(body);
     }.bind(this))
     toBeCreated.forEach(function (points) {
+
       let polyObject = [];
       for (let i = 0; i < points.length / 2; i++) {
         polyObject.push({
@@ -150,11 +151,22 @@ class playGame extends Phaser.Scene {
         })
       }
       let sliceCentre = Phaser.Physics.Matter.Matter.Vertices.centre(polyObject);
-      let reverse = dynamic ? -1 : 1;
-      let body = this.createBody(sliceCentre.x, sliceCentre.y, polyObject, color, dynamic, reverse);
-      body.body = this.matter.add.fromVertices(sliceCentre.x, sliceCentre.y, polyObject, {
-        isStatic: false
-      });
+      var verts = this.matter.verts.fromPath(points.join(' '));
+      for (let i = 0; i < verts.length; i++) {
+        (verts[i].x -= sliceCentre.x) * -1;
+        (verts[i].y -= sliceCentre.y) * -1;
+      }
+      var poly = this.add.polygon(sliceCentre.x, sliceCentre.y, verts, polyFill);
+      poly.setStrokeStyle(2, 0x00);
+      this.matter.add.gameObject(
+        poly, {
+          shape: {
+            type: 'fromVerts',
+            verts,
+            flagInternal: true
+          }
+        }).setOrigin(0, 0);
+      // console.log(body);
     }.bind(this))
   }
 
@@ -185,7 +197,7 @@ class playGame extends Phaser.Scene {
       10, 10, 'Level:' + currentLevel, textFormat);
 
     var slices = this.add.text(
-      this.game.config.width - 100, 10,
+      this.game.config.width - 120, 10,
       'Slices Left:' + levelMarkerData[i].slicesLeft, textFormat);
 
     var target = this.add.text(
@@ -193,7 +205,7 @@ class playGame extends Phaser.Scene {
       'Target:' + levelMarkerData[i].target + '%', textFormat);
 
     var removed = this.add.text(
-      this.game.config.width - 100, this.game.config.height - 50,
+      this.game.config.width - 120, this.game.config.height - 50,
       'Removed:' + levelMarkerData[i].percent + '%', textFormat);
   }
 
@@ -214,42 +226,39 @@ class playGame extends Phaser.Scene {
     const curPolys = curLvl.polygons;
     for (let index = 0; index < curPolys.length; index++) {
       let reverse = curPolys[index].dynamic ? -1 : 1;
-      let x = curPolys[index].startX + (curPolys[index].width / 2) * reverse;
-
-      x += (this.game.config.width / 30) * reverse * -1;
-      let y = curPolys[index].startY + ((curPolys[index].height / 2) * reverse) - (curPolys[index].startY / 30);
-      //     let x = curPolys[index].startX + ((curPolys[index].width / 2) * reverse) + (curPolys[index].startX / 3);
-      //      let y = curPolys[index].startY + ((curPolys[index].height / 2) * reverse) - (curPolys[index].startY / 30);
       var data = curPolys[index].coordinates;
+      var path = data.join(' ');
 
-      //   console.log(x, y, data);
-      for (let i = 0; i < data.length; i++) {
-        data[i] *= reverse;
-
+      var verts = this.matter.verts.fromPath(path);
+      for (let i = 0; i < verts.length; i++) {
+        verts[i].x *= reverse;
+        verts[i].y *= reverse;
       }
-      this.createBody(x, y, data, colorSwitch(curPolys[index].color), curPolys[index].dynamic, reverse);
+      var poly = this.add.polygon(curPolys[index].x, curPolys[index].y, verts, 0xff0000);
+      poly.setStrokeStyle(2, 0x00);
+      // console.log(poly);
+      var body = this.matter.add.gameObject(poly, {
+        shape: {
+          type: 'fromVerts',
+          verts,
+          flagInternal: true
+        }
+      }).setOrigin(0.5 * reverse, 0.5 * reverse);
+      //   this.matter.add.rectangle(game.config.width / 2 - 50, game.config.width / 2, 100, 300);
+
+
+      this.cameras.main.setBackgroundColor(0xCCCCCC);
+      //this.matter.world.setBounds(10, 10, game.config.width - 10, game.config.height - 10);
+      this.matter.world.update30Hz();
+      //this.matter.add.rectangle(polygon.points);
+      this.lineGraphics = this.add.graphics();
+      this.input.on("pointerdown", this.startDrawing, this);
+      this.input.on("pointerup", this.stopDrawing, this);
+      this.input.on("pointermove", this.keepDrawing, this);
+      this.isDrawing = false;
+      levelBuilt = true;
     }
-
-    this.matter.world.update30Hz();
-    //this.matter.add.rectangle(polygon.points);
-    this.lineGraphics = this.add.graphics();
-    this.input.on("pointerdown", this.startDrawing, this);
-    this.input.on("pointerup", this.stopDrawing, this);
-    this.input.on("pointermove", this.keepDrawing, this);
-    this.isDrawing = false;
-    levelBuilt = true;
   }
-
-  createBody(x, y, data, color, dynamic, reverse) {
-    console.log(x, y, color, dynamic, reverse);
-    var polygon = this.add.polygon(x, y, data, color);
-    polygon.setStrokeStyle(2, 0x00);
-    this.matter.add.gameObject(polygon).setStatic(!dynamic).setOrigin(0.5 * reverse, 0.5 * reverse);
-    polygon.body.density = 5;
-    polygon.body.friction = 0.2;
-    polygon.body.restitution = 0;
-  }
-
   showMenu(onOff) {
     menu.visible = onOff;
     if (!onOff) {

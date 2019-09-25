@@ -38,19 +38,17 @@ class playGame extends Phaser.Scene {
       verts[i].x *= reverse;
       verts[i].y *= reverse;
     }
-    console.log(verts);
     var poly = this.add.polygon(361.033, 366.5909, verts, 0xff0000);
     //console.log(poly);
     poly.setStrokeStyle(2, 0x00);
-    let polyCentre = Phaser.Physics.Matter.Matter.Vertices.centre(verts)
-    this.matter.add.gameObject(poly, {
+    console.log(poly);
+    var body = this.matter.add.gameObject(poly, {
       shape: {
         type: 'fromVerts',
         verts,
         flagInternal: true
       }
     }).setOrigin(0.5 * reverse, 0.5 * reverse);
-
     //   this.matter.add.rectangle(game.config.width / 2 - 50, game.config.width / 2, 100, 300);
     this.lineGraphics = this.add.graphics();
     this.input.on("pointerdown", this.startDrawing, this);
@@ -64,7 +62,7 @@ class playGame extends Phaser.Scene {
   keepDrawing(pointer) {
     if (this.isDrawing) {
       this.lineGraphics.clear();
-      this.lineGraphics.lineStyle(2, 0x000000);
+      this.lineGraphics.lineStyle(2, 0x00);
       this.lineGraphics.moveTo(pointer.downX, pointer.downY);
       this.lineGraphics.lineTo(pointer.x, pointer.y);
       this.lineGraphics.strokePath();
@@ -77,26 +75,30 @@ class playGame extends Phaser.Scene {
     let toBeSliced = [];
     let toBeCreated = [];
     for (let i = 0; i < bodies.length; i++) {
-      let vertices = bodies[i].parts[0].vertices;
-      let pointsArray = [];
-      vertices.forEach(function (vertex) {
-        pointsArray.push(vertex.x, vertex.y)
-      });
-      let slicedPolygons = PolyK.Slice(pointsArray, pointer.downX, pointer.downY, pointer.upX, pointer.upY);
-      if (slicedPolygons.length > 1) {
-        toBeSliced.push(bodies[i]);
-        slicedPolygons.forEach(function (points) {
-          toBeCreated.push(points)
-        })
+      if (!bodies[i].isStatic) {
+        let vertices = bodies[i].parts[0].vertices;
+        let pointsArray = [];
+        vertices.forEach(function (vertex) {
+          pointsArray.push(vertex.x, vertex.y)
+        });
+        let slicedPolygons = PolyK.Slice(pointsArray, pointer.downX, pointer.downY, pointer.upX, pointer.upY);
+        if (slicedPolygons.length > 1) {
+          toBeSliced.push(bodies[i]);
+          slicedPolygons.forEach(function (points) {
+            toBeCreated.push(points)
+          })
 
+        }
       }
     }
+    let polyFill;
     toBeSliced.forEach(function (body) {
-      var dynamic = !body.gameObject.isStatic;
+      polyFill = body.gameObject.fillColor;
       body.gameObject.destroy();
       this.matter.world.remove(body);
     }.bind(this))
     toBeCreated.forEach(function (points) {
+
       let polyObject = [];
       for (let i = 0; i < points.length / 2; i++) {
         polyObject.push({
@@ -104,10 +106,23 @@ class playGame extends Phaser.Scene {
           y: points[i * 2 + 1]
         })
       }
-      let sliceCentre = Phaser.Physics.Matter.Matter.Vertices.centre(polyObject)
-      let slicedBody = this.matter.add.fromVertices(sliceCentre.x, sliceCentre.y, polyObject, {
-        isStatic: false
-      });
+      let sliceCentre = Phaser.Physics.Matter.Matter.Vertices.centre(polyObject);
+      var verts = this.matter.verts.fromPath(points.join(' '));
+      for (let i = 0; i < verts.length; i++) {
+        (verts[i].x -= sliceCentre.x) * -1;
+        (verts[i].y -= sliceCentre.y) * -1;
+      }
+      var poly = this.add.polygon(sliceCentre.x, sliceCentre.y, verts, polyFill);
+      poly.setStrokeStyle(2, 0x00);
+      this.matter.add.gameObject(
+        poly, {
+          shape: {
+            type: 'fromVerts',
+            verts,
+            flagInternal: true
+          }
+        }).setOrigin(0, 0);
+      // console.log(body);
     }.bind(this))
   }
 };
