@@ -237,12 +237,14 @@ class playGame extends Phaser.Scene {
       poly.setStrokeStyle(2, 0x00);
       // console.log(poly);
       var body = this.matter.add.gameObject(poly, {
-        shape: {
-          type: 'fromVerts',
-          verts,
-          flagInternal: true
-        }
-      }).setOrigin(0.5 * reverse, 0.5 * reverse);
+          shape: {
+            type: 'fromVerts',
+            verts,
+            flagInternal: true
+          }
+        })
+        .setStatic(!curPolys[index].dynamic)
+        .setOrigin(0.5 * reverse, 0.5 * reverse);
       //   this.matter.add.rectangle(game.config.width / 2 - 50, game.config.width / 2, 100, 300);
 
 
@@ -316,7 +318,7 @@ class playGame extends Phaser.Scene {
           slicesLeft: 3,
         }
         levelMarkerData.push(levelMarker);
-        if (levelMarker.level < 6)
+        if (levelMarker.level < 21)
           levelMarker.unlocked = true;
         i++;
       }
