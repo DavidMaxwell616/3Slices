@@ -106,7 +106,7 @@ class playGame extends Phaser.Scene {
   keepDrawing(pointer) {
     if (this.isDrawing) {
       this.lineGraphics.clear();
-      this.lineGraphics.lineStyle(1, 0x00ff00);
+      this.lineGraphics.lineStyle(2, 0x00);
       this.lineGraphics.moveTo(pointer.downX, pointer.downY);
       this.lineGraphics.lineTo(pointer.x, pointer.y);
       this.lineGraphics.strokePath();
@@ -221,20 +221,19 @@ class playGame extends Phaser.Scene {
 
   buildLevel(currentLevel) {
     this.cameras.main.setBackgroundColor(0xCCCCCC);
-    //this.matter.world.setBounds();
+    this.matter.world.setBounds();
     const curLvl = levelData[currentLevel - 1];
     const curPolys = curLvl.polygons;
     for (let index = 0; index < curPolys.length; index++) {
       let reverse = curPolys[index].dynamic ? -1 : 1;
-      var data = curPolys[index].coordinates;
-      var path = data.join(' ');
+      var path = curPolys[index].coordinates;
 
       var verts = this.matter.verts.fromPath(path);
       for (let i = 0; i < verts.length; i++) {
         verts[i].x *= reverse;
         verts[i].y *= reverse;
       }
-      var poly = this.add.polygon(curPolys[index].x, curPolys[index].y, verts, 0xff0000);
+      var poly = this.add.polygon(curPolys[index].startX, curPolys[index].startY, verts, colorSwitch(curPolys[index].color));
       poly.setStrokeStyle(2, 0x00);
       // console.log(poly);
       var body = this.matter.add.gameObject(poly, {
