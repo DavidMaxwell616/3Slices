@@ -15,12 +15,13 @@ let polys = [];
 let slices = 3;
 let target = 0;
 let completed = 0;
-const colorSwitch = (color) => ({
-  "red": "0xff0000",
-  "blue": "0x0000ff",
-  "white": "0xffffff",
-  "black": "0x000000"
-})[color]
+const colorSwitch = color =>
+  ({
+    red: '0xff0000',
+    blue: '0x0000ff',
+    white: '0xffffff',
+    black: '0x000000',
+  } [color]);
 
 window.onload = function () {
   let gameConfig = {
@@ -28,27 +29,27 @@ window.onload = function () {
     scale: {
       mode: Phaser.Scale.FIT,
       autoCenter: Phaser.Scale.CENTER_BOTH,
-      parent: "thegame",
+      parent: 'thegame',
       width: 640,
-      height: 480
+      height: 480,
     },
     scene: playGame,
     physics: {
-      default: "matter",
+      default: 'matter',
       matter: {
         gravity: {
-          y: 3
+          y: 3,
         },
-        debug: true,
-      }
-    }
-  }
+        debug: false,
+      },
+    },
+  };
   game = new Phaser.Game(gameConfig);
   window.focus();
-}
+};
 class playGame extends Phaser.Scene {
   constructor() {
-    super("PlayGame");
+    super('PlayGame');
   }
 
   preload() {
@@ -69,8 +70,8 @@ class playGame extends Phaser.Scene {
       var level = {
         level: index + 1,
         scoreTargets: [],
-        polygons: []
-      }
+        polygons: [],
+      };
 
       for (var i = 0; i < 3; i++) {
         level.scoreTargets.push(data[index][i]);
@@ -82,7 +83,7 @@ class playGame extends Phaser.Scene {
           startY: data[index][i][1],
           width: data[index][i][2],
           height: data[index][i][3],
-          offset: data[index][i][4],
+          angle: data[index][i][4],
           dynamic: data[index][i][5],
           type: data[index][i][6],
           anchorX: data[index][i][7],
@@ -90,7 +91,7 @@ class playGame extends Phaser.Scene {
           anchorZ: data[index][i][9],
           color: data[index][i][10],
           coordinates: data[index][i][11],
-        }
+        };
         level.polygons.push(poly);
       }
       levelData.push(level);
@@ -123,51 +124,67 @@ class playGame extends Phaser.Scene {
         let vertices = bodies[i].parts[0].vertices;
         let pointsArray = [];
         vertices.forEach(function (vertex) {
-          pointsArray.push(vertex.x, vertex.y)
+          pointsArray.push(vertex.x, vertex.y);
         });
-        let slicedPolygons = PolyK.Slice(pointsArray, pointer.downX, pointer.downY, pointer.upX, pointer.upY);
+        let slicedPolygons = PolyK.Slice(
+          pointsArray,
+          pointer.downX,
+          pointer.downY,
+          pointer.upX,
+          pointer.upY,
+        );
         if (slicedPolygons.length > 1) {
           toBeSliced.push(bodies[i]);
           slicedPolygons.forEach(function (points) {
-            toBeCreated.push(points)
-          })
-
+            toBeCreated.push(points);
+          });
         }
       }
     }
     let polyFill;
-    toBeSliced.forEach(function (body) {
-      polyFill = body.gameObject.fillColor;
-      body.gameObject.destroy();
-      this.matter.world.remove(body);
-    }.bind(this))
-    toBeCreated.forEach(function (points) {
-
-      let polyObject = [];
-      for (let i = 0; i < points.length / 2; i++) {
-        polyObject.push({
-          x: points[i * 2],
-          y: points[i * 2 + 1]
-        })
-      }
-      let sliceCentre = Phaser.Physics.Matter.Matter.Vertices.centre(polyObject);
-      var verts = this.matter.verts.fromPath(points.join(' '));
-      for (let i = 0; i < verts.length; i++) {
-        (verts[i].x -= sliceCentre.x) * -1;
-        (verts[i].y -= sliceCentre.y) * -1;
-      }
-      var poly = this.add.polygon(sliceCentre.x, sliceCentre.y, verts, polyFill);
-      poly.setStrokeStyle(2, 0x00);
-      this.matter.add.gameObject(
-        poly, {
-          shape: {
-            type: 'fromVerts',
-            verts,
-            flagInternal: true
-          }
-        }).setOrigin(0, 0);
-      // console.log(body);
-    }.bind(this))
+    toBeSliced.forEach(
+      function (body) {
+        polyFill = body.gameObject.fillColor;
+        body.gameObject.destroy();
+        this.matter.world.remove(body);
+      }.bind(this),
+    );
+    toBeCreated.forEach(
+      function (points) {
+        let polyObject = [];
+        for (let i = 0; i < points.length / 2; i++) {
+          polyObject.push({
+            x: points[i * 2],
+            y: points[i * 2 + 1],
+          });
+        }
+        let sliceCentre = Phaser.Physics.Matter.Matter.Vertices.centre(
+          polyObject,
+        );
+        var verts = this.matter.verts.fromPath(points.join(' '));
+        for (let i = 0; i < verts.length; i++) {
+          (verts[i].x -= sliceCentre.x) * -1;
+          (verts[i].y -= sliceCentre.y) * -1;
+        }
+        var poly = this.add.polygon(
+          sliceCentre.x,
+          sliceCentre.y,
+          verts,
+          polyFill,
+        );
+        poly.setStrokeStyle(2, 0x00);
+        this.matter.add
+          .gameObject(poly, {
+            shape: {
+              type: 'fromVerts',
+              verts,
+              flagInternal: true,
+            },
+          })
+          .setOrigin(0, 0);
+        // console.log(body);
+      }.bind(this),
+    );
   }
 
   update() {
@@ -180,7 +197,17 @@ class playGame extends Phaser.Scene {
       this.buildLevel(currentLevel);
     }
     this.showStatus();
-
+    let bodies = this.matter.world.localWorld.bodies;
+    for (let i = 0; i < bodies.length; i++) {
+      let body = bodies[i];
+      const obj = body.gameObject;
+      console.log(obj);
+      // if (obj.fillColor == "0xff0000" || obj.fillColor == "0xff0000" == "0xffffff") {
+      //   body.force.y += body.mass * 0.001;
+      // } else if (obj.fillColor == "0x0000ff") {
+      //   body.force.y -= body.mass * 0.001;
+      // }
+    }
   }
 
   showStatus() {
@@ -193,34 +220,42 @@ class playGame extends Phaser.Scene {
       strokeThickness: 6,
     };
 
-    var lvlText = this.add.text(
-      10, 10, 'Level:' + currentLevel, textFormat);
+    var lvlText = this.add.text(10, 10, 'Level:' + currentLevel, textFormat);
 
     var slices = this.add.text(
-      this.game.config.width - 120, 10,
-      'Slices Left:' + levelMarkerData[i].slicesLeft, textFormat);
+      this.game.config.width - 120,
+      10,
+      'Slices Left:' + levelMarkerData[i].slicesLeft,
+      textFormat,
+    );
 
     var target = this.add.text(
-      10, this.game.config.height - 50,
-      'Target:' + levelMarkerData[i].target + '%', textFormat);
+      10,
+      this.game.config.height - 50,
+      'Target:' + levelMarkerData[i].target + '%',
+      textFormat,
+    );
 
     var removed = this.add.text(
-      this.game.config.width - 120, this.game.config.height - 50,
-      'Removed:' + levelMarkerData[i].percent + '%', textFormat);
+      this.game.config.width - 120,
+      this.game.config.height - 50,
+      'Removed:' + levelMarkerData[i].percent + '%',
+      textFormat,
+    );
   }
 
   levelSelected(x, y) {
     startGame = true;
-    currentLevel = x + ((y - 1) * 4);
+    currentLevel = x + (y - 1) * 4;
     this.showMenu(false);
   }
 
   getLevel(x, y) {
-    return x + ((y - 1) * 4);
+    return x + (y - 1) * 4;
   }
 
   buildLevel(currentLevel) {
-    this.cameras.main.setBackgroundColor(0xCCCCCC);
+    this.cameras.main.setBackgroundColor(0xcccccc);
     this.matter.world.setBounds();
     const curLvl = levelData[currentLevel - 1];
     const curPolys = curLvl.polygons;
@@ -229,33 +264,43 @@ class playGame extends Phaser.Scene {
       var path = curPolys[index].coordinates;
 
       var verts = this.matter.verts.fromPath(path);
-      for (let i = 0; i < verts.length; i++) {
-        verts[i].x *= reverse;
-        verts[i].y *= reverse;
-      }
-      var poly = this.add.polygon(curPolys[index].startX, curPolys[index].startY, verts, colorSwitch(curPolys[index].color));
+
+      var poly = this.add.polygon(
+        curPolys[index].startX,
+        curPolys[index].startY,
+        verts,
+        colorSwitch(curPolys[index].color),
+      );
       poly.setStrokeStyle(2, 0x00);
       // console.log(poly);
-      var body = this.matter.add.gameObject(poly, {
+      var body = this.matter.add
+        .gameObject(poly, {
           shape: {
             type: 'fromVerts',
             verts,
-            flagInternal: true
-          }
+            flagInternal: true,
+          },
         })
         .setStatic(!curPolys[index].dynamic)
-        .setOrigin(0.5 * reverse, 0.5 * reverse);
+        .setOrigin(0.5, 0.5);
       //   this.matter.add.rectangle(game.config.width / 2 - 50, game.config.width / 2, 100, 300);
+      body.angle = Phaser.Math.RadToDeg(curPolys[index].angle);
 
-
-      this.cameras.main.setBackgroundColor(0xCCCCCC);
+      // if (!curPolys[index].dynamic) {
+      //   body.x = curPolys[index].startX + body.width / 2; // += curPolys[index].dynamic ? 0 : body.width / 2;
+      //   body.y = curPolys[index].startY - body.height / 2;
+      // } else {
+      //   body.x = curPolys[index].startX + body.width / 2; // += curPolys[index].dynamic ? 0 : body.width / 2;
+      //   //body.y = curPolys[index].startY - body.height / 2;
+      // }
+      //this.cameras.main.setBackgroundColor(0xCCCCCC);
       //this.matter.world.setBounds(10, 10, game.config.width - 10, game.config.height - 10);
       this.matter.world.update30Hz();
       //this.matter.add.rectangle(polygon.points);
       this.lineGraphics = this.add.graphics();
-      this.input.on("pointerdown", this.startDrawing, this);
-      this.input.on("pointerup", this.stopDrawing, this);
-      this.input.on("pointermove", this.keepDrawing, this);
+      this.input.on('pointerdown', this.startDrawing, this);
+      this.input.on('pointerup', this.stopDrawing, this);
+      this.input.on('pointermove', this.keepDrawing, this);
       this.isDrawing = false;
       levelBuilt = true;
     }
@@ -278,16 +323,18 @@ class playGame extends Phaser.Scene {
             levelMarkerData[i].level, {
               fontFamily: 'Arial',
               fontSize: 24,
-              color: '#ffffff'
-            });
+              color: '#ffffff',
+            },
+          );
           var lvlText2 = this.add.text(
             levelMarkerData[i].x - 25,
             levelMarkerData[i].y,
             levelMarkerData[i].percent + '%', {
               fontFamily: 'Arial',
               fontSize: 16,
-              color: '#ffffff'
-            });
+              color: '#ffffff',
+            },
+          );
           text.push(lvlText);
           text.push(lvlText2);
         }
@@ -296,14 +343,21 @@ class playGame extends Phaser.Scene {
   }
 
   buildMenu() {
-    titleShadow = this.add.image(325, 55, 'titleShadow').setScale(.3).setOrigin(0.5, 0.5);
-    title = this.add.image(320, 50, 'title').setScale(.3).setOrigin(0.5, 0.5);
+    titleShadow = this.add
+      .image(325, 55, 'titleShadow')
+      .setScale(0.3)
+      .setOrigin(0.5, 0.5);
+    title = this.add
+      .image(320, 50, 'title')
+      .setScale(0.3)
+      .setOrigin(0.5, 0.5);
     let i = 1;
     let lvlButtons = [];
     for (let y = 1; y <= 4; y++) {
       for (let x = 1; x <= 5; x++) {
-        const lvlButton = this.add.image(x * 105, y * 100 + 30, 'level_marker')
-          .setScale(.4)
+        const lvlButton = this.add
+          .image(x * 105, y * 100 + 30, 'level_marker')
+          .setScale(0.4)
           .setOrigin(0.5, 0.5)
           .setInteractive()
           .on('pointerdown', () => this.levelSelected(x, y));
@@ -316,10 +370,9 @@ class playGame extends Phaser.Scene {
           percent: 0,
           target: 100,
           slicesLeft: 3,
-        }
+        };
         levelMarkerData.push(levelMarker);
-        if (levelMarker.level < 21)
-          levelMarker.unlocked = true;
+        if (levelMarker.level < 21) levelMarker.unlocked = true;
         i++;
       }
     }
@@ -329,5 +382,4 @@ class playGame extends Phaser.Scene {
     menu.add(lvlButtons);
     menu.visible = false;
   }
-
-};
+}
