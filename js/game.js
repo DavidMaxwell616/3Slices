@@ -41,7 +41,7 @@ window.onload = function () {
         gravity: {
           y: 3,
         },
-        debug: true,
+        debug: false,
       },
     },
   };
@@ -258,7 +258,7 @@ class playGame extends Phaser.Scene {
 
   buildLevel(currentLevel) {
     this.cameras.main.setBackgroundColor(0xcccccc);
-    this.matter.world.setBounds();
+    //this.matter.world.setBounds();
     const curLvl = levelData[currentLevel - 1];
     const curPolys = curLvl.polygons;
     for (let index = 0; index < curPolys.length; index++) {
@@ -281,7 +281,9 @@ class playGame extends Phaser.Scene {
             verts,
             flagInternal: true,
             density: 5,
-            friction: Infinity,
+            friction: 1,
+            frictionAir: 1,
+            frictionStatic: 1,
             restitution: 0
           },
         })
