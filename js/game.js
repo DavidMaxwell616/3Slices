@@ -16,6 +16,14 @@ let slices = 3;
 let target = 0;
 let completed = 0;
 let textIsShowing = false;
+let lvlText;
+let sliceText;
+let targetText;
+let removedText;
+let slicesLeft = 3;
+let totalMass = 0;
+let removed = 0;
+
 const colorSwitch = color =>
   ({
     red: '0xff0000',
@@ -39,7 +47,7 @@ window.onload = function () {
       default: 'matter',
       matter: {
         gravity: {
-          y: 3,
+          y: 1,
         },
         debug: false,
       },
@@ -72,12 +80,12 @@ class playGame extends Phaser.Scene {
         scoreTargets: [],
         polygons: [],
       };
-
       level.level = data[index][0];
 
       for (var i = 1; i < 4; i++) {
         level.scoreTargets.push(data[index][i]);
       }
+      target = level.scoreTargets[0];
 
       for (var i = 4; i < data[index].length; i++) {
         var poly = {
@@ -115,7 +123,10 @@ class playGame extends Phaser.Scene {
       this.lineGraphics.strokePath();
     }
   }
+
   stopDrawing(pointer) {
+    if (!this.isDrawing)
+      return;
     this.lineGraphics.clear();
     this.isDrawing = false;
     let bodies = this.matter.world.localWorld.bodies;
@@ -123,6 +134,7 @@ class playGame extends Phaser.Scene {
     let toBeCreated = [];
     for (let i = 0; i < bodies.length; i++) {
       if (!bodies[i].isStatic) {
+        slicesLeft--;
         let vertices = bodies[i].parts[0].vertices;
         let pointsArray = [];
         vertices.forEach(function (vertex) {
@@ -198,18 +210,34 @@ class playGame extends Phaser.Scene {
       //this.matter.world.setBounds(10, 10, game.config.width - 20, game.config.height - 20);
       this.buildLevel(currentLevel);
     }
-    this.showStatus();
+    lvlText == null ? this.showStatus() : this.updateStatus();
     let bodies = this.matter.world.localWorld.bodies;
     for (let i = 0; i < bodies.length; i++) {
       let body = bodies[i];
       const obj = body.gameObject;
-      // console.log(obj);
       // if (obj.fillColor == "0xff0000" || obj.fillColor == "0xff0000" == "0xffffff") {
       //   body.force.y += body.mass * 0.001;
       // } else if (obj.fillColor == "0x0000ff") {
       //   body.force.y -= body.mass * 0.001;
       // }
+      //           console.log(obj.y);
+      if (obj.fillColor == "0xff0000" & (obj.y > 800 || obj.y < -300)) {
+        removed += Math.floor((body.mass / totalMass) * 100);
+        body.destroy();
+        if (removed >= 99)
+          removed = 100;
+        this.updateStatus();
+      }
     }
+  }
+
+
+
+  updateStatus() {
+    lvlText.setText('Level:' + currentLevel);
+    sliceText.setText('Slices Left:' + slicesLeft);
+    targetText.setText('Target:' + target + '%');
+    removedText.setText('Removed:' + removed + '%');
   }
 
   showStatus() {
@@ -222,26 +250,26 @@ class playGame extends Phaser.Scene {
       strokeThickness: 6,
     };
 
-    var lvlText = this.add.text(10, 10, 'Level:' + currentLevel, textFormat);
+    lvlText = this.add.text(10, 10, 'Level:' + currentLevel, textFormat);
 
-    var slices = this.add.text(
+    sliceText = this.add.text(
       this.game.config.width - 120,
       10,
-      'Slices Left:' + levelMarkerData[i].slicesLeft,
+      'Slices Left:' + slicesLeft,
       textFormat,
     );
 
-    var target = this.add.text(
+    targetText = this.add.text(
       10,
       this.game.config.height - 50,
-      'Target:' + levelMarkerData[i].target + '%',
+      'Target:' + target + '%',
       textFormat,
     );
 
-    var removed = this.add.text(
+    removedText = this.add.text(
       this.game.config.width - 120,
       this.game.config.height - 50,
-      'Removed:' + levelMarkerData[i].percent + '%',
+      'Removed:' + removed + '%',
       textFormat,
     );
   }
@@ -298,8 +326,15 @@ class playGame extends Phaser.Scene {
       this.input.on('pointerup', this.stopDrawing, this);
       this.input.on('pointermove', this.keepDrawing, this);
       this.isDrawing = false;
-      levelBuilt = true;
     }
+    let bodies = this.matter.world.localWorld.bodies;
+    for (let i = 0; i < bodies.length; i++) {
+      const obj = bodies[i].gameObject;
+      if (obj.fillColor == '0xff0000') {
+        totalMass += bodies[i].mass;
+      }
+    }
+    levelBuilt = true;
   }
   showMenu(onOff) {
     menu.visible = onOff;
@@ -371,8 +406,6 @@ class playGame extends Phaser.Scene {
           y: y * 100 + 30,
           unlocked: false,
           percent: 0,
-          target: 100,
-          slicesLeft: 3,
         };
         levelMarkerData.push(levelMarker);
         //if (levelMarker.level < 21) 
