@@ -12,7 +12,6 @@ let text = [];
 let currentLevel = 0;
 let levelBuilt = false;
 let polys = [];
-let slices = 3;
 let target = 0;
 let completed = 0;
 let textIsShowing = false;
@@ -30,6 +29,9 @@ let tryAgain;
 let tryNext;
 let goToMenu;
 let levelCompleted = false;
+let width = 0;
+let height = 0;
+let rect;
 
 const colorSwitch = color =>
   ({
@@ -87,6 +89,8 @@ class playGame extends Phaser.Scene {
   }
 
   create() {
+    width = this.game.config.width;
+    height = this.game.config.height;
     this.cameras.main.setBackgroundColor(0x666666);
     let data = this.cache.json.get('levelData').levels;
     for (let index = 0; index < data.length; index++) {
@@ -137,6 +141,7 @@ class playGame extends Phaser.Scene {
       this.lineGraphics.moveTo(pointer.downX, pointer.downY);
       this.lineGraphics.lineTo(pointer.x, pointer.y);
       this.lineGraphics.strokePath();
+      this.lineGraphics.depth = 1;
     }
   }
 
@@ -150,7 +155,6 @@ class playGame extends Phaser.Scene {
     let toBeCreated = [];
     for (let i = 0; i < bodies.length; i++) {
       if (!bodies[i].isStatic) {
-        slicesLeft--;
         let vertices = bodies[i].parts[0].vertices;
         let pointsArray = [];
         vertices.forEach(function (vertex) {
@@ -172,6 +176,8 @@ class playGame extends Phaser.Scene {
       }
     }
     let polyFill;
+    if (toBeSliced.length > 0)
+      slicesLeft--;
     toBeSliced.forEach(
       function (body) {
         polyFill = body.gameObject.fillColor;
@@ -250,9 +256,13 @@ class playGame extends Phaser.Scene {
           removed = 100;
         this.updateStatus();
       }
-      if (removed == 100) {
+      if (removed >= target) {
         levelCompleted = true;
         this.showPopup(true, true);
+      }
+      if (slicesLeft == 0 && removed < 100) {
+        levelCompleted = true;
+        this.showPopup(false, true);
       }
     }
   }
@@ -353,9 +363,12 @@ class playGame extends Phaser.Scene {
         totalMass += bodies[i].mass;
       }
     }
+    target = curLvl.scoreTargets[0];
     levelBuilt = true;
   }
+
   showMenu(onOff) {
+    this.cameras.main.setBackgroundColor(0x666666);
     menu.visible = onOff;
     if (!onOff) {
       for (let index = 0; index < text.length; index++) {
@@ -395,10 +408,9 @@ class playGame extends Phaser.Scene {
     }
     textIsShowing = true;
   }
+
   levelOverPopup() {
-    const width = this.game.config.width;
-    const height = this.game.config.height;
-    const rect = new Phaser.Geom.Rectangle(width - 200, height / 2 - 100, 200, 200);
+    rect = new Phaser.Geom.Rectangle(width - 200, height / 2 - 100, 200, 200);
     var pfColor = 0x00CC05;
 
     rectGraphics = this.add.graphics({
@@ -411,15 +423,15 @@ class playGame extends Phaser.Scene {
 
     popupTitle = this.add.text(rect.x + 20, rect.y + 30, 'LEVEL COMPLETED!', textFormat).setVisible(false);
 
-    tryAgain = this.add.text(rect.x + 70, rect.y + 70, 'Retry', textFormat)
+    tryAgain = this.add.text(rect.x + 30, rect.y + 70, 'Retry', textFormat)
       .setInteractive()
       .on('pointerdown', () => this.retryLevel())
       .setVisible(false);
-    tryNext = this.add.text(rect.x + 70, rect.y + 100, 'Next', textFormat)
+    tryNext = this.add.text(rect.x + 30, rect.y + 100, 'Next', textFormat)
       .setInteractive()
       .on('pointerdown', () => this.nextLevel())
       .setVisible(false);
-    goToMenu = this.add.text(rect.x + 70, rect.y + 130, 'Go To Menu', textFormat)
+    goToMenu = this.add.text(rect.x + 30, rect.y + 130, 'Go To Menu', textFormat)
       .setInteractive()
       .on('pointerdown', () => this.goToMenu())
       .setVisible(false);
@@ -427,45 +439,57 @@ class playGame extends Phaser.Scene {
 
   showPopup(passFail, isVisible) {
     var pfColor = passFail ? 0x00CC05 : 0xff0000;
+    rectGraphics.clear();
+    rectGraphics = this.add.graphics({
+      fillStyle: {
+        color: pfColor
+      }
+    });
+
+    rectGraphics.fillRectShape(rect);
     rectGraphics.setVisible(isVisible);
-    console.log(rectGraphics);
-    //rectGraphics.setFillStyle(pfColor);
+    //rectGraphics.tint = pfColor;
     tryAgain.setVisible(isVisible);
+    tryAgain.depth = 1;
     popupTitle.setVisible(isVisible);
+    popupTitle.depth = 1;
     popupTitle.setText(passFail ? 'LEVEL COMPLETED!' : 'FAILED LEVEL');
     tryNext.setVisible(passFail ? isVisible : false);
+    tryNext.depth = 1;
     goToMenu.setVisible(isVisible);
+    goToMenu.depth = 1;
   }
 
   retryLevel() {
-    levelCompleted = false;
+    this.resetWorld();
     this.showPopup(true, false);
-    levelCompleted = false;
-    removed = 0;
     this.buildLevel(currentLevel);
   }
 
   nextLevel() {
-    let bodies = this.matter.world.localWorld.bodies;
-    for (let index = 0; index < bodies.length; index++) {
-      console.log(bodies[index]);
-
-      // bodies[index].gameObject.destroy();
-      // bodies[index].destroy();
-    }
-    levelCompleted = false;
+    this.resetWorld();
     this.showPopup(true, false);
     currentLevel++;
-    removed = 0;
-    // this.buildLevel(currentLevel);
+    this.buildLevel(currentLevel);
   }
 
   goToMenu() {
+    this.resetWorld();
     this.showPopup(true, false);
-    levelCompleted = false;
     this.showMenu(true);
   }
 
+  resetWorld() {
+    levelCompleted = false;
+    slicesLeft = 3;
+    removed = 0;
+    totalMass = 0;
+    let bodies = this.matter.world.localWorld.bodies;
+    for (let index = 0; index < bodies.length; index++) {
+      if (bodies[index].gameObject != null)
+        bodies[index].gameObject.destroy();
+    }
+  }
 
   buildMenu() {
     titleShadow = this.add
