@@ -23,6 +23,13 @@ let removedText;
 let slicesLeft = 3;
 let totalMass = 0;
 let removed = 0;
+let popup;
+let rectGraphics;
+let popupTitle;
+let tryAgain;
+let tryNext;
+let goToMenu;
+let levelCompleted = false;
 
 const colorSwitch = color =>
   ({
@@ -31,7 +38,14 @@ const colorSwitch = color =>
     white: '0xffffff',
     black: '0x000000',
   } [color]);
-
+const textFormat = {
+  fontFamily: 'Arial',
+  fontStyle: 'Bold',
+  fontSize: 16,
+  color: '#ffffff',
+  stroke: '#000000',
+  strokeThickness: 6,
+};
 window.onload = function () {
   let gameConfig = {
     type: Phaser.AUTO,
@@ -107,6 +121,8 @@ class playGame extends Phaser.Scene {
       levelData.push(level);
     }
     this.buildMenu();
+    this.levelOverPopup();
+
     //maxxdaddy = this.add.image(this.game.config.width * 0.9, this.game.config.height * 0.95, 'maxxdaddy');
   }
 
@@ -202,14 +218,19 @@ class playGame extends Phaser.Scene {
   }
 
   update() {
+    // startGame = true;
+    // currentLevel = 1;
     if (!startGame) {
       this.showMenu(true);
       return;
     }
+
     if (!levelBuilt) {
       //this.matter.world.setBounds(10, 10, game.config.width - 20, game.config.height - 20);
       this.buildLevel(currentLevel);
     }
+    if (levelCompleted)
+      return;
     lvlText == null ? this.showStatus() : this.updateStatus();
     let bodies = this.matter.world.localWorld.bodies;
     for (let i = 0; i < bodies.length; i++) {
@@ -221,12 +242,17 @@ class playGame extends Phaser.Scene {
       //   body.force.y -= body.mass * 0.001;
       // }
       //           console.log(obj.y);
-      if (obj.fillColor == "0xff0000" & (obj.y > 800 || obj.y < -300)) {
-        removed += Math.floor((body.mass / totalMass) * 100);
+      if (obj.y > 800 || obj.y < -300) {
+        if (obj.fillColor == "0xff0000")
+          removed += Math.floor((body.mass / totalMass) * 100);
         body.destroy();
         if (removed >= 99)
           removed = 100;
         this.updateStatus();
+      }
+      if (removed == 100) {
+        levelCompleted = true;
+        this.showPopup(true, true);
       }
     }
   }
@@ -241,14 +267,7 @@ class playGame extends Phaser.Scene {
   }
 
   showStatus() {
-    var textFormat = {
-      fontFamily: 'Arial',
-      fontStyle: 'Bold',
-      fontSize: 16,
-      color: '#ffffff',
-      stroke: '#000000',
-      strokeThickness: 6,
-    };
+
 
     lvlText = this.add.text(10, 10, 'Level:' + currentLevel, textFormat);
 
@@ -376,6 +395,77 @@ class playGame extends Phaser.Scene {
     }
     textIsShowing = true;
   }
+  levelOverPopup() {
+    const width = this.game.config.width;
+    const height = this.game.config.height;
+    const rect = new Phaser.Geom.Rectangle(width - 200, height / 2 - 100, 200, 200);
+    var pfColor = 0x00CC05;
+
+    rectGraphics = this.add.graphics({
+      fillStyle: {
+        color: pfColor
+      }
+    });
+
+    rectGraphics.fillRectShape(rect).setVisible(false);
+
+    popupTitle = this.add.text(rect.x + 20, rect.y + 30, 'LEVEL COMPLETED!', textFormat).setVisible(false);
+
+    tryAgain = this.add.text(rect.x + 70, rect.y + 70, 'Retry', textFormat)
+      .setInteractive()
+      .on('pointerdown', () => this.retryLevel())
+      .setVisible(false);
+    tryNext = this.add.text(rect.x + 70, rect.y + 100, 'Next', textFormat)
+      .setInteractive()
+      .on('pointerdown', () => this.nextLevel())
+      .setVisible(false);
+    goToMenu = this.add.text(rect.x + 70, rect.y + 130, 'Go To Menu', textFormat)
+      .setInteractive()
+      .on('pointerdown', () => this.goToMenu())
+      .setVisible(false);
+  }
+
+  showPopup(passFail, isVisible) {
+    var pfColor = passFail ? 0x00CC05 : 0xff0000;
+    rectGraphics.setVisible(isVisible);
+    console.log(rectGraphics);
+    //rectGraphics.setFillStyle(pfColor);
+    tryAgain.setVisible(isVisible);
+    popupTitle.setVisible(isVisible);
+    popupTitle.setText(passFail ? 'LEVEL COMPLETED!' : 'FAILED LEVEL');
+    tryNext.setVisible(passFail ? isVisible : false);
+    goToMenu.setVisible(isVisible);
+  }
+
+  retryLevel() {
+    levelCompleted = false;
+    this.showPopup(true, false);
+    levelCompleted = false;
+    removed = 0;
+    this.buildLevel(currentLevel);
+  }
+
+  nextLevel() {
+    let bodies = this.matter.world.localWorld.bodies;
+    for (let index = 0; index < bodies.length; index++) {
+      console.log(bodies[index]);
+
+      // bodies[index].gameObject.destroy();
+      // bodies[index].destroy();
+    }
+    levelCompleted = false;
+    this.showPopup(true, false);
+    currentLevel++;
+    removed = 0;
+    // this.buildLevel(currentLevel);
+  }
+
+  goToMenu() {
+    this.showPopup(true, false);
+    levelCompleted = false;
+    this.showMenu(true);
+  }
+
 
   buildMenu() {
     titleShadow = this.add
