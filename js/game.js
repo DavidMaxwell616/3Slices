@@ -154,23 +154,31 @@ class playGame extends Phaser.Scene {
     let toBeSliced = [];
     let toBeCreated = [];
     for (let i = 0; i < bodies.length; i++) {
-      if (!bodies[i].isStatic) {
+      let body = bodies[i];
+      if (!body.isStatic) {
         let vertices = bodies[i].parts[0].vertices;
         let pointsArray = [];
         vertices.forEach(function (vertex) {
           pointsArray.push(vertex.x, vertex.y);
         });
-        let slicedPolygons = PolyK.Slice(
+        let slice = PolyK.Slice(
           pointsArray,
           pointer.downX,
           pointer.downY,
           pointer.upX,
           pointer.upY,
         );
+        let bodyColor = body.gameObject.fillColor;
+        let slicedPolygons = [];
+        let p = {
+          slice,
+          bodyColor
+        };
+        slicedPolygons.push(p);
         if (slicedPolygons.length > 1) {
           toBeSliced.push(bodies[i]);
-          slicedPolygons.forEach(function (points) {
-            toBeCreated.push(points);
+          slicedPolygons.forEach(function (points, color) {
+            toBeCreated.push(points, color);
           });
         }
       }
@@ -186,7 +194,7 @@ class playGame extends Phaser.Scene {
       }.bind(this),
     );
     toBeCreated.forEach(
-      function (points) {
+      function (points, color) {
         let polyObject = [];
         for (let i = 0; i < points.length / 2; i++) {
           polyObject.push({
@@ -202,6 +210,7 @@ class playGame extends Phaser.Scene {
           (verts[i].x -= sliceCentre.x) * -1;
           (verts[i].y -= sliceCentre.y) * -1;
         }
+        polyfill = color;
         var poly = this.add.polygon(
           sliceCentre.x,
           sliceCentre.y,
