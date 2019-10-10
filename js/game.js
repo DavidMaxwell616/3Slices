@@ -19,7 +19,7 @@ let lvlText;
 let sliceText;
 let targetText;
 let removedText;
-let slicesLeft = 3;
+let slicesLeft = 1;
 let totalMass = 0;
 let removed = 0;
 let popup;
@@ -79,7 +79,7 @@ class playGame extends Phaser.Scene {
     }
 
     preload() {
-        this.load.json('levelData', 'assets/map1.json');
+        this.load.json('levelData', 'assets/json/map1.json');
         this.load.image('do_over', 'assets/images/do_over.png');
         this.load.image('go_back', 'assets/images/go_back.png');
         this.load.image('level_marker', 'assets/images/level_marker.png');
@@ -127,7 +127,6 @@ class playGame extends Phaser.Scene {
         }
         this.buildMenu();
         this.levelOverPopup();
-
         //maxxdaddy = this.add.image(this.game.config.width * 0.9, this.game.config.height * 0.95, 'maxxdaddy');
     }
 
@@ -228,8 +227,8 @@ class playGame extends Phaser.Scene {
     }
 
     update() {
-       //  startGame = true;
-       //  currentLevel = 1;
+       startGame = true;
+       currentLevel = 2;
         if (!startGame) {
             this.showMenu(true);
             return;
@@ -317,8 +316,24 @@ class playGame extends Phaser.Scene {
         return x + (y - 1) * 5;
     }
 
+    clearBodies(){
+      let bodies = this.matter.world.localWorld.bodies;
+      for (let index = 0; index < bodies.length; index++) {
+      let body = bodies[index];
+      body.gameObject.visible = false;
+    //if (body.gameObject != null)
+      body.gameObject.destroy();
+    body.visible = false;
+    this.matter.world.remove(body);
+    }
+     while(bodies.length > 0) {
+      bodies.pop();
+  }
+    }
+    
     buildLevel(currentLevel) {
-        this.cameras.main.setBackgroundColor(0xcccccc);
+      this.clearBodies();  
+      this.cameras.main.setBackgroundColor(0xcccccc);
         //this.matter.world.setBounds();
         const curLvl = levelData[currentLevel - 1];
         const curPolys = curLvl.polygons;
@@ -352,22 +367,16 @@ class playGame extends Phaser.Scene {
             var angle = Phaser.Math.RadToDeg(curPolys[index].angle);
 
             body.angle = angle;
-
             this.matter.world.update30Hz();
             this.lineGraphics = this.add.graphics();
             this.input.on('pointerdown', this.startDrawing, this);
             this.input.on('pointerup', this.stopDrawing, this);
             this.input.on('pointermove', this.keepDrawing, this);
             this.isDrawing = false;
-        }
-        let bodies = this.matter.world.localWorld.bodies;
-        for (let i = 0; i < bodies.length; i++) {
-            const obj = bodies[i].gameObject;
-            if (obj.fillColor == '0xff0000') {
-                totalMass += bodies[i].mass;
-            }
-        }
-        target = curLvl.scoreTargets[0];
+            // if (body.gameObject.fillColor == '0xff0000') 
+            //   totalMass += bodies[i].mass;
+      }
+      target = curLvl.scoreTargets[0];
         levelBuilt = true;
     }
 
@@ -485,16 +494,9 @@ class playGame extends Phaser.Scene {
 
     resetWorld() {
         levelCompleted = false;
-        slicesLeft = 3;
+        slicesLeft = 1;
         removed = 0;
         totalMass = 0;
-        let bodies = this.matter.world.localWorld.bodies;
-        for (let index = 0; index < bodies.length; index++) {
-          let body = bodies[index];
-            //if (body.gameObject != null)
-            body.gameObject.destroy();
-            this.matter.world.remove(body);
-        }
     }
 
     buildMenu() {
