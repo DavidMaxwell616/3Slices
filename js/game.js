@@ -19,7 +19,7 @@ let lvlText;
 let sliceText;
 let targetText;
 let removedText;
-let slicesLeft = 1;
+let slicesLeft = 3;
 let totalMass = 0;
 let removed = 0;
 let popup;
@@ -33,6 +33,7 @@ let width = 0;
 let height = 0;
 let rect;
 let polyFill;
+let polyGroup = [];
 
 const colorSwitch = color =>
     ({
@@ -188,7 +189,7 @@ class playGame extends Phaser.Scene {
         toBeCreated.forEach(
             function (points) {
                 let polyObject = [];
-                polyFill = points[points.length-1];
+                polyFill = points[points.length - 1];
                 points.pop();
                 for (let i = 0; i < points.length / 2; i++) {
                     polyObject.push({
@@ -212,6 +213,7 @@ class playGame extends Phaser.Scene {
                     polyFill,
                 );
                 poly.setStrokeStyle(2, 0x00);
+                polyGroup.push(poly);
                 this.matter.add
                     .gameObject(poly, {
                         shape: {
@@ -227,8 +229,8 @@ class playGame extends Phaser.Scene {
     }
 
     update() {
-       startGame = true;
-       currentLevel = 2;
+       // startGame = true;
+       // currentLevel = 2;
         if (!startGame) {
             this.showMenu(true);
             return;
@@ -242,6 +244,7 @@ class playGame extends Phaser.Scene {
             return;
         lvlText == null ? this.showStatus() : this.updateStatus();
         let bodies = this.matter.world.localWorld.bodies;
+        const curLvl = levelData[currentLevel - 1];
         for (let i = 0; i < bodies.length; i++) {
             let body = bodies[i];
             const obj = body.gameObject;
@@ -259,18 +262,30 @@ class playGame extends Phaser.Scene {
                     removed = 100;
                 this.updateStatus();
             }
-            if (removed >= target) {
+            if (removed >= target) {// && this.allPiecesSleeping()
+                curLvl.percent = removed;
                 levelCompleted = true;
                 this.showPopup(true, true);
             }
-            if (slicesLeft == 0 && removed < 100) {
+            if (slicesLeft == 0 && removed < 100 ) {
+                curLvl.percent = removed;
                 levelCompleted = true;
                 this.showPopup(false, true);
             }
         }
     }
 
-
+    allPiecesSleeping() {
+        let retValue = true;
+        let bodies = this.matter.world.localWorld.bodies;
+        for (let i = 0; i < bodies.length; i++) {
+            if (!bodies[i].isSleeping && !bodies[i].isStatic) {
+               // console.log(bodies[i]);
+                retValue = false;
+            }
+        }
+        return retValue;
+    }
 
     updateStatus() {
         lvlText.setText('Level:' + currentLevel);
@@ -316,24 +331,30 @@ class playGame extends Phaser.Scene {
         return x + (y - 1) * 5;
     }
 
-    clearBodies(){
-      let bodies = this.matter.world.localWorld.bodies;
-      for (let index = 0; index < bodies.length; index++) {
-      let body = bodies[index];
-      body.gameObject.visible = false;
-    //if (body.gameObject != null)
-      body.gameObject.destroy();
-    body.visible = false;
-    this.matter.world.remove(body);
+    clearBodies() {
+        for (let index = 0; index < polyGroup.length; index++) {
+            polyGroup[index].visible = false;
+        }
+        let bodies = this.matter.world.localWorld.bodies;
+        for (let index = 0; index < bodies.length; index++) {
+            let body = bodies[index];
+            body.gameObject.visible = false;
+            //if (body.gameObject != null)
+            body.gameObject.destroy();
+            body.visible = false;
+            this.matter.world.remove(body);
+        }
+  
+        while (polyGroup.length > 0) {
+            polyGroup.pop();
+        }
+       while (bodies.length > 0) {
+            bodies.pop();
+        }
     }
-     while(bodies.length > 0) {
-      bodies.pop();
-  }
-    }
-    
+
     buildLevel(currentLevel) {
-      this.clearBodies();  
-      this.cameras.main.setBackgroundColor(0xcccccc);
+        this.cameras.main.setBackgroundColor(0xcccccc);
         //this.matter.world.setBounds();
         const curLvl = levelData[currentLevel - 1];
         const curPolys = curLvl.polygons;
@@ -349,6 +370,7 @@ class playGame extends Phaser.Scene {
                 colorSwitch(curPolys[index].color),
             );
             poly.setStrokeStyle(2, 0x00);
+            polyGroup.push(poly);
             // console.log(poly);
             var body = this.matter.add
                 .gameObject(poly, {
@@ -364,6 +386,7 @@ class playGame extends Phaser.Scene {
                     },
                 })
                 .setStatic(!curPolys[index].dynamic)
+ 
             var angle = Phaser.Math.RadToDeg(curPolys[index].angle);
 
             body.angle = angle;
@@ -373,10 +396,10 @@ class playGame extends Phaser.Scene {
             this.input.on('pointerup', this.stopDrawing, this);
             this.input.on('pointermove', this.keepDrawing, this);
             this.isDrawing = false;
-            // if (body.gameObject.fillColor == '0xff0000') 
-            //   totalMass += bodies[i].mass;
-      }
-      target = curLvl.scoreTargets[0];
+            if (body.fillColor == '0xff0000') 
+               totalMass += body.body.mass;
+          }
+        target = curLvl.scoreTargets[0];
         levelBuilt = true;
     }
 
@@ -483,6 +506,7 @@ class playGame extends Phaser.Scene {
         this.resetWorld();
         this.showPopup(true, false);
         currentLevel++;
+        levelData[currentLevel - 1].unlocked = true;
         this.buildLevel(currentLevel);
     }
 
@@ -494,9 +518,10 @@ class playGame extends Phaser.Scene {
 
     resetWorld() {
         levelCompleted = false;
-        slicesLeft = 1;
+        slicesLeft = 3;
         removed = 0;
         totalMass = 0;
+        this.clearBodies();
     }
 
     buildMenu() {
@@ -530,7 +555,7 @@ class playGame extends Phaser.Scene {
                     percent: 0,
                 };
                 levelMarkerData.push(levelMarker);
-                //if (levelMarker.level < 21) 
+                if (levelMarker.level < 2) 
                 levelMarker.unlocked = true;
                 i++;
             }
