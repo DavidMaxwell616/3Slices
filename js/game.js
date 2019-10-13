@@ -64,7 +64,7 @@ window.onload = function () {
         physics: {
             default: 'matter',
             matter: {
-                gravity: {
+                 gravity: {
                     y: 1,
                 },
                 debug: false,
@@ -132,7 +132,13 @@ class playGame extends Phaser.Scene {
     }
 
     startDrawing() {
-        this.isDrawing = true;
+      if(slicesLeft==0)
+      {
+        levelCompleted = true;
+        removed >= target ? this.showPopup(true, true):this.showPopup(false, true);
+      }
+      else  
+      this.isDrawing = true;
     }
 
     keepDrawing(pointer) {
@@ -235,14 +241,13 @@ class playGame extends Phaser.Scene {
             this.showMenu(true);
             return;
         }
-
+        lvlText == null ? this.statusText() : this.updateStatus();
         if (!levelBuilt) {
             //this.matter.world.setBounds(10, 10, game.config.width - 20, game.config.height - 20);
             this.buildLevel(currentLevel);
         }
         if (levelCompleted)
             return;
-        lvlText == null ? this.showStatus() : this.updateStatus();
         let bodies = this.matter.world.localWorld.bodies;
         const curLvl = levelData[currentLevel - 1];
         for (let i = 0; i < bodies.length; i++) {
@@ -260,18 +265,19 @@ class playGame extends Phaser.Scene {
                 body.destroy();
                 if (removed >= 99)
                     removed = 100;
-                this.updateStatus();
+                this.updateStatus(true);
             }
-            if (removed >= target) {// && this.allPiecesSleeping()
-                curLvl.percent = removed;
+            //console.log(obj.fillColor,Math.floor(body.velocity.x),Math.floor(body.velocity.y));
+            if (removed >= target){// && this.allPiecesSleeping()){
+              levelMarkerData[currentLevel - 1].percent = removed;
+              levelMarkerData[currentLevel].unlocked = true;
                 levelCompleted = true;
                 this.showPopup(true, true);
             }
-            if (slicesLeft == 0 && removed < 100 ) {
-                curLvl.percent = removed;
-                levelCompleted = true;
-                this.showPopup(false, true);
-            }
+            // if (slicesLeft == 0 && removed < target){//  && this.allPiecesSleeping()){
+            //     levelCompleted = true;
+            //     this.showPopup(false, true);
+            // }
         }
     }
 
@@ -280,23 +286,31 @@ class playGame extends Phaser.Scene {
         let bodies = this.matter.world.localWorld.bodies;
         for (let i = 0; i < bodies.length; i++) {
             if (!bodies[i].isSleeping && !bodies[i].isStatic) {
-               // console.log(bodies[i]);
                 retValue = false;
             }
         }
         return retValue;
     }
-
+    
     updateStatus() {
         lvlText.setText('Level:' + currentLevel);
         sliceText.setText('Slices Left:' + slicesLeft);
         targetText.setText('Target:' + target + '%');
         removedText.setText('Removed:' + removed + '%');
+      }
+
+    showStatus(onOff){
+      lvlText.visible = onOff;
+      lvlText.depth = 1;
+      sliceText.visible = onOff;
+      sliceText.depth = 1;
+      targetText.visible = onOff;
+      targetText.depth = 1;
+      removedText.visible = onOff;
+      removedText.depth = 1;
     }
 
-    showStatus() {
-
-
+    statusText() {
         lvlText = this.add.text(10, 10, 'Level:' + currentLevel, textFormat);
 
         sliceText = this.add.text(
@@ -324,6 +338,7 @@ class playGame extends Phaser.Scene {
     levelSelected(x, y) {
         startGame = true;
         currentLevel = x + (y - 1) * 5;
+        levelBuilt = false;
         this.showMenu(false);
     }
 
@@ -400,6 +415,7 @@ class playGame extends Phaser.Scene {
                totalMass += body.body.mass;
           }
         target = curLvl.scoreTargets[0];
+        this.showStatus(true);
         levelBuilt = true;
     }
 
@@ -415,12 +431,17 @@ class playGame extends Phaser.Scene {
         }
         if (textIsShowing)
             return;
-        for (let y = 1; y <= 4; y++) {
+         for (let y = 1; y <= 4; y++) {
             for (let x = 1; x <= 5; x++) {
+              let offset = 0;
+              let offset2 = 0;
                 let i = this.getLevel(x, y) - 1;
-                if (levelMarkerData[i].unlocked) {
+                let val = levelMarkerData[i].level;
+                if (val > 9)
+                offset = -8;
+                 if (levelMarkerData[i].unlocked) {
                     var lvlText = this.add.text(
-                        levelMarkerData[i].x - 25,
+                        levelMarkerData[i].x - 25 + offset,
                         levelMarkerData[i].y - 30,
                         levelMarkerData[i].level, {
                             fontFamily: 'Arial',
@@ -428,10 +449,15 @@ class playGame extends Phaser.Scene {
                             color: '#ffffff',
                         },
                     );
-                    var lvlText2 = this.add.text(
-                        levelMarkerData[i].x - 25,
+                    val = levelMarkerData[i].percent;
+                    if(val>9)
+                    offset2 = -8;
+                    if(val>99)
+                    offset2 = - 16;
+                     var lvlText2 = this.add.text(
+                        levelMarkerData[i].x - 25 + offset2,
                         levelMarkerData[i].y,
-                        levelMarkerData[i].percent + '%', {
+                        val + '%', {
                             fontFamily: 'Arial',
                             fontSize: 16,
                             color: '#ffffff',
@@ -506,11 +532,11 @@ class playGame extends Phaser.Scene {
         this.resetWorld();
         this.showPopup(true, false);
         currentLevel++;
-        levelData[currentLevel - 1].unlocked = true;
         this.buildLevel(currentLevel);
     }
 
     goToMenu() {
+      this.showStatus(false);
         this.resetWorld();
         this.showPopup(true, false);
         this.showMenu(true);
@@ -535,7 +561,6 @@ class playGame extends Phaser.Scene {
             .setOrigin(0.5, 0.5);
         let i = 1;
         let lvlButtons = [];
-        let offset = 0;
         for (let y = 1; y <= 4; y++) {
             for (let x = 1; x <= 5; x++) {
                 const lvlButton = this.add
@@ -545,17 +570,15 @@ class playGame extends Phaser.Scene {
                     .setInteractive()
                     .on('pointerdown', () => this.levelSelected(x, y));
                 lvlButtons.push(lvlButton);
-                if (i > 9)
-                    offset = -8;
                 var levelMarker = {
                     level: i,
-                    x: x * 105 + 20 + offset,
+                    x: x * 105 + 20,
                     y: y * 100 + 30,
                     unlocked: false,
                     percent: 0,
                 };
                 levelMarkerData.push(levelMarker);
-                if (levelMarker.level < 2) 
+                if (levelMarker.level < 20) 
                 levelMarker.unlocked = true;
                 i++;
             }
