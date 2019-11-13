@@ -294,7 +294,7 @@ class playGame extends Phaser.Scene {
     lvlText.setText('Level:' + currentLevel);
     sliceText.setText('Slices Left:' + slicesLeft);
     targetText.setText('Target:' + target + '%');
-    removedText.setText('Removed:' + removed + '%');
+    removedText.setText('Removed:' + Math.floor(removed) + '%');
   }
 
   showStatus(onOff) {
