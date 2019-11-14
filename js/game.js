@@ -267,7 +267,7 @@ class playGame extends Phaser.Scene {
       }
       //console.log(obj.fillColor,Math.floor(body.velocity.x),Math.floor(body.velocity.y));
       if (removed >= target) { // && this.allPiecesSleeping()){
-        levelMarkerData[currentLevel - 1].percent = removed;
+        levelMarkerData[currentLevel - 1].percent = Math.floor(removed);
         levelMarkerData[currentLevel].unlocked = true;
         levelCompleted = true;
         this.showPopup(true, true);
@@ -328,7 +328,7 @@ class playGame extends Phaser.Scene {
     removedText = this.add.text(
       this.game.config.width - 120,
       this.game.config.height - 50,
-      'Removed:' + removed + '%',
+      'Removed:' + Math.floor(removed) + '%',
       textFormat,
     );
   }
