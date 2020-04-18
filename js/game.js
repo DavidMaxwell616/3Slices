@@ -1,146 +1,30 @@
-let game;
-let levelData = [];
-let polygon;
-let polygons = [];
-let startGame = false;
-var menu;
-let maxxdaddy;
-let title;
-let titleShadow;
-let levelMarkerData = [];
-let text = [];
-let currentLevel = 0;
-let levelBuilt = false;
-let polys = [];
-let target = 0;
-let completed = 0;
-let textIsShowing = false;
-let lvlText;
-let sliceText;
-let targetText;
-let removedText;
-let slicesLeft = 3;
-let totalMass = 0;
-let removed = 0;
-let popup;
-let rectGraphics;
-let popupTitle;
-let tryAgain;
-let tryNext;
-let goToMenu;
-let levelCompleted = false;
-let width = 0;
-let height = 0;
-let rect;
-let polyFill;
-let polyGroup = [];
-
-const colorSwitch = color =>
-  ({
-    red: '0xff0000',
-    blue: '0x0000ff',
-    white: '0xffffff',
-    black: '0x000000',
-  } [color]);
-const textFormat = {
-  fontFamily: 'Arial',
-  fontStyle: 'Bold',
-  fontSize: 16,
-  color: '#ffffff',
-  stroke: '#000000',
-  strokeThickness: 6,
-};
-window.onload = function () {
-  let gameConfig = {
-    type: Phaser.AUTO,
-    scale: {
-      mode: Phaser.Scale.FIT,
-      autoCenter: Phaser.Scale.CENTER_BOTH,
-      parent: 'thegame',
-      width: 640,
-      height: 480,
-    },
-    scene: playGame,
-    physics: {
-      default: 'matter',
-      matter: {
-        gravity: {
-          y: 1,
-        },
-        debug: false,
+var config = {
+  type: Phaser.AUTO,
+  width: 640,
+  height: 480,
+  parent: 'canvas',
+  scene: {
+    preload: preload,
+    create: create,
+    update: update,
+  },
+  physics: {
+    default: 'matter',
+    matter: {
+      gravity: {
+        y: 1,
       },
+      debug: false,
     },
-  };
-  game = new Phaser.Game(gameConfig);
-  window.focus();
+  },
 };
-class playGame extends Phaser.Scene {
-  constructor() {
-    super('PlayGame');
-  }
 
-  preload() {
-    this.showLoader(this);
-    this.load.json('levelData', 'assets/json/map1.json');
-    this.load.image('do_over', 'assets/images/do_over.png');
-    this.load.image('go_back', 'assets/images/go_back.png');
-    this.load.image('level_marker', 'assets/images/level_marker.png');
-    this.load.image('play_button', 'assets/images/play_button.png');
-    this.load.image('title', 'assets/images/title.png');
-    this.load.image('titleShadow', 'assets/images/titleShadow.png');
-    this.load.image('maxxdaddy', 'assets/images/maxxdaddy.gif');
-  }
-
-  showLoader(game) {
-    var progressBar = game.add.graphics();
-    var progressBox = game.add.graphics();
-    progressBox.fillStyle(0x222222, 0.8);
-    progressBox.fillRect(340, 270, 320, 50);
-    game.load.on('progress', function (value) {});
-
-    game.load.on('fileprogress', function (file) {});
-
-    game.load.on('complete', function () {
-      progressBar.destroy();
-      progressBox.destroy();
-      loadingText.destroy();
-      percentText.destroy();
-    });
-    game.load.on('progress', function (value) {
-      progressBar.clear();
-      progressBar.fillStyle(0xff4500, 1);
-      progressBar.fillRect(350, 280, 300 * value, 30);
-      percentText.setText(parseInt(value * 100) + '%');
-    });
-
-    var width = game.cameras.main.width;
-    var height = game.cameras.main.height;
-    var loadingText = game.make.text({
-      x: width / 2,
-      y: height / 2 - 50,
-      text: 'Loading...',
-      style: {
-        font: '20px monospace',
-        fill: '#ffffff'
-      }
-    });
-    loadingText.setOrigin(0.5, 0.5);
-
-    var percentText = game.make.text({
-      x: width / 2,
-      y: height / 2 - 5,
-      text: '0%',
-      style: {
-        font: '18px monospace',
-        fill: '#ffffff'
-      }
-    });
-    percentText.setOrigin(0.5, 0.5);
-  }
-
-  create() {
-    width = this.game.config.width;
-    height = this.game.config.height;
+var game = new Phaser.Game(config);
+var _scene;
+function create() {
+  _scene = this;
+    width = game.config.width;
+    height = game.config.height;
     this.cameras.main.setBackgroundColor(0x666666);
     let data = this.cache.json.get('levelData').levels;
     for (let index = 0; index < data.length; index++) {
@@ -150,12 +34,12 @@ class playGame extends Phaser.Scene {
       };
       level.level = data[index][0];
 
-      for (var i = 1; i < 4; i++) {
+      for (var i = 1; i < 5; i++) {
         level.scoreTargets.push(data[index][i]);
       }
       target = level.scoreTargets[0];
 
-      for (var i = 4; i < data[index].length; i++) {
+      for (var i = 5; i < data[index].length; i++) {
         var poly = {
           startX: data[index][i][0],
           startY: data[index][i][1],
@@ -174,36 +58,36 @@ class playGame extends Phaser.Scene {
       }
       levelData.push(level);
     }
-    this.buildMenu();
-    this.levelOverPopup();
-    //maxxdaddy = this.add.image(this.game.config.width * 0.9, this.game.config.height * 0.95, 'maxxdaddy');
+    buildMenu();
+    levelOverPopup();
+    //maxxdaddy = add.image(game.config.width * 0.9, game.config.height * 0.95, 'maxxdaddy');
   }
 
-  startDrawing() {
+function startDrawing() {
     if (slicesLeft == 0) {
       levelCompleted = true;
-      removed >= target ? this.showPopup(true, true) : this.showPopup(false, true);
+      removed >= target ? showPopup(true, true) : showPopup(false, true);
     } else
-      this.isDrawing = true;
+      isDrawing = true;
   }
 
-  keepDrawing(pointer) {
-    if (this.isDrawing) {
-      this.lineGraphics.clear();
-      this.lineGraphics.lineStyle(2, 0x00);
-      this.lineGraphics.moveTo(pointer.downX, pointer.downY);
-      this.lineGraphics.lineTo(pointer.x, pointer.y);
-      this.lineGraphics.strokePath();
-      this.lineGraphics.depth = 1;
+  function   keepDrawing(pointer) {
+    if (isDrawing) {
+      lineGraphics.clear();
+      lineGraphics.lineStyle(2, 0x00);
+      lineGraphics.moveTo(pointer.downX, pointer.downY);
+      lineGraphics.lineTo(pointer.x, pointer.y);
+      lineGraphics.strokePath();
+      lineGraphics.depth = 1;
     }
   }
 
-  stopDrawing(pointer) {
-    if (!this.isDrawing)
+  function  stopDrawing(pointer) {
+    if (!isDrawing)
       return;
-    this.lineGraphics.clear();
-    this.isDrawing = false;
-    let bodies = this.matter.world.localWorld.bodies;
+    lineGraphics.clear();
+    isDrawing = false;
+    let bodies = _scene.matter.world.localWorld.bodies;
     let toBeSliced = [];
     let toBeCreated = [];
     for (let i = 0; i < bodies.length; i++) {
@@ -235,7 +119,7 @@ class playGame extends Phaser.Scene {
     toBeSliced.forEach(
       function (body) {
         body.gameObject.destroy();
-        this.matter.world.remove(body);
+        _scene.matter.world.remove(body);
       }.bind(this),
     );
     toBeCreated.forEach(
@@ -253,12 +137,12 @@ class playGame extends Phaser.Scene {
         let sliceCentre = Phaser.Physics.Matter.Matter.Vertices.centre(
           polyObject,
         );
-        var verts = this.matter.verts.fromPath(points.join(' '));
+        var verts = _scene.matter.verts.fromPath(points.join(' '));
         for (let i = 0; i < verts.length; i++) {
           (verts[i].x -= sliceCentre.x) * -1;
           (verts[i].y -= sliceCentre.y) * -1;
         }
-        var poly = this.add.polygon(
+        var poly = _scene.add.polygon(
           sliceCentre.x,
           sliceCentre.y,
           verts,
@@ -266,7 +150,7 @@ class playGame extends Phaser.Scene {
         );
         poly.setStrokeStyle(2, 0x00);
         polyGroup.push(poly);
-        this.matter.add
+        _scene.matter.add
           .gameObject(poly, {
             shape: {
               type: 'fromVerts',
@@ -280,56 +164,53 @@ class playGame extends Phaser.Scene {
     );
   }
 
-  update() {
+  function   update() {
     // startGame = true;
     // currentLevel = 2;
     if (!startGame) {
-      this.showMenu(true);
+      showMenu(true);
       return;
     }
-    lvlText == null ? this.statusText() : this.updateStatus();
+    lvlText == null ? statusText() : updateStatus();
     if (!levelBuilt) {
-      //this.matter.world.setBounds(10, 10, game.config.width - 20, game.config.height - 20);
-      this.buildLevel(currentLevel);
+      //matter.world.setBounds(10, 10, game.config.width - 20, game.config.height - 20);
+      buildLevel(currentLevel);
     }
     if (levelCompleted)
       return;
-    let bodies = this.matter.world.localWorld.bodies;
+    let bodies = _scene.matter.world.localWorld.bodies;
     const curLvl = levelData[currentLevel - 1];
     for (let i = 0; i < bodies.length; i++) {
       let body = bodies[i];
       const obj = body.gameObject;
-      // if (obj.fillColor == "0xff0000" || obj.fillColor == "0xff0000" == "0xffffff") {
-      //   body.force.y += body.mass * 0.001;
-      // } else if (obj.fillColor == "0x0000ff") {
-      //   body.force.y -= body.mass * 0.001;
-      // }
-      //           console.log(obj.y);
-      if (obj.y > 800 || obj.y < -300) {
-        if (obj.fillColor == "0xff0000")
+      if (obj.fillColor == '0x0000ff') {
+        body.force.y -= body.mass * 0.002;
+      }
+      if (obj.y > 800 || obj.y < -100) {
+        if (obj.fillColor == "0xff0000" || obj.fillColor == '0x0000ff')
           removed += (body.mass / totalMass) * 100;
         body.destroy();
         if (removed >= 99)
           removed = 100;
-        this.updateStatus(true);
+        updateStatus(true);
       }
       //console.log(obj.fillColor,Math.floor(body.velocity.x),Math.floor(body.velocity.y));
-      if (removed >= target) { // && this.allPiecesSleeping()){
+      if (removed >= target) { // && allPiecesSleeping()){
         levelMarkerData[currentLevel - 1].percent = Math.floor(removed);
         levelMarkerData[currentLevel].unlocked = true;
         levelCompleted = true;
-        this.showPopup(true, true);
+        showPopup(true, true);
       }
-      // if (slicesLeft == 0 && removed < target){//  && this.allPiecesSleeping()){
+      // if (slicesLeft == 0 && removed < target){//  && allPiecesSleeping()){
       //     levelCompleted = true;
-      //     this.showPopup(false, true);
+      //     showPopup(false, true);
       // }
     }
   }
 
-  allPiecesSleeping() {
+  function allPiecesSleeping() {
     let retValue = true;
-    let bodies = this.matter.world.localWorld.bodies;
+    let bodies = matter.world.localWorld.bodies;
     for (let i = 0; i < bodies.length; i++) {
       if (!bodies[i].isSleeping && !bodies[i].isStatic) {
         retValue = false;
@@ -338,14 +219,14 @@ class playGame extends Phaser.Scene {
     return retValue;
   }
 
-  updateStatus() {
+  function  updateStatus() {
     lvlText.setText('Level:' + currentLevel);
     sliceText.setText('Slices Left:' + slicesLeft);
     targetText.setText('Target:' + target + '%');
     removedText.setText('Removed:' + Math.floor(removed) + '%');
   }
 
-  showStatus(onOff) {
+  function showStatus(onOff) {
     lvlText.visible = onOff;
     lvlText.depth = 1;
     sliceText.visible = onOff;
@@ -356,54 +237,54 @@ class playGame extends Phaser.Scene {
     removedText.depth = 1;
   }
 
-  statusText() {
-    lvlText = this.add.text(10, 10, 'Level:' + currentLevel, textFormat);
+  function statusText() {
+    lvlText = _scene.add.text(10, 10, 'Level:' + currentLevel, textFormat);
 
-    sliceText = this.add.text(
-      this.game.config.width - 120,
+    sliceText = _scene.add.text(
+      game.config.width - 120,
       10,
       'Slices Left:' + slicesLeft,
       textFormat,
     );
 
-    targetText = this.add.text(
+    targetText = _scene.add.text(
       10,
-      this.game.config.height - 50,
+      game.config.height - 50,
       'Target:' + target + '%',
       textFormat,
     );
 
-    removedText = this.add.text(
-      this.game.config.width - 120,
-      this.game.config.height - 50,
+    removedText = _scene.add.text(
+      game.config.width - 120,
+      game.config.height - 50,
       'Removed:' + Math.floor(removed) + '%',
       textFormat,
     );
   }
 
-  levelSelected(x, y) {
+  function levelSelected(x, y) {
     startGame = true;
     currentLevel = x + (y - 1) * 5;
     levelBuilt = false;
-    this.showMenu(false);
+    showMenu(false);
   }
 
-  getLevel(x, y) {
+  function  getLevel(x, y) {
     return x + (y - 1) * 5;
   }
 
-  clearBodies() {
+  function clearBodies() {
     for (let index = 0; index < polyGroup.length; index++) {
       polyGroup[index].visible = false;
     }
-    let bodies = this.matter.world.localWorld.bodies;
+    let bodies = _scene.matter.world.localWorld.bodies;
     for (let index = 0; index < bodies.length; index++) {
       let body = bodies[index];
       body.gameObject.visible = false;
       //if (body.gameObject != null)
       body.gameObject.destroy();
       body.visible = false;
-      this.matter.world.remove(body);
+      _scene.matter.world.remove(body);
     }
 
     while (polyGroup.length > 0) {
@@ -414,17 +295,17 @@ class playGame extends Phaser.Scene {
     }
   }
 
-  buildLevel(currentLevel) {
-    this.cameras.main.setBackgroundColor(0xcccccc);
-    //this.matter.world.setBounds();
+  function  buildLevel(currentLevel) {
+   // cameras.main.setBackgroundColor(0xcccccc);
+    //matter.world.setBounds();
     const curLvl = levelData[currentLevel - 1];
     const curPolys = curLvl.polygons;
     for (let index = 0; index < curPolys.length; index++) {
       var path = curPolys[index].coordinates;
 
-      var verts = this.matter.verts.fromPath(path);
+      var verts = _scene.matter.verts.fromPath(path);
 
-      var poly = this.add.polygon(
+      var poly = _scene.add.polygon(
         curPolys[index].startX,
         curPolys[index].startY,
         verts,
@@ -433,7 +314,7 @@ class playGame extends Phaser.Scene {
       poly.setStrokeStyle(2, 0x00);
       polyGroup.push(poly);
       // console.log(poly);
-      var body = this.matter.add
+      var body = _scene.matter.add
         .gameObject(poly, {
           shape: {
             type: 'fromVerts',
@@ -451,22 +332,22 @@ class playGame extends Phaser.Scene {
       var angle = Phaser.Math.RadToDeg(curPolys[index].angle);
 
       body.angle = angle;
-      this.matter.world.update30Hz();
-      this.lineGraphics = this.add.graphics();
-      this.input.on('pointerdown', this.startDrawing, this);
-      this.input.on('pointerup', this.stopDrawing, this);
-      this.input.on('pointermove', this.keepDrawing, this);
-      this.isDrawing = false;
-      if (body.fillColor == '0xff0000')
+      _scene.matter.world.update30Hz();
+      lineGraphics = _scene.add.graphics();
+      _scene.input.on('pointerdown', startDrawing, this);
+      _scene.input.on('pointerup', stopDrawing, this);
+      _scene.input.on('pointermove', keepDrawing, this);
+      isDrawing = false;
+      if (body.fillColor == '0xff0000' || body.fillColor == '0x0000ff')
         totalMass += body.body.mass;
     }
     target = curLvl.scoreTargets[0];
-    this.showStatus(true);
+    showStatus(true);
     levelBuilt = true;
   }
 
-  showMenu(onOff) {
-    this.cameras.main.setBackgroundColor(0x666666);
+  function   showMenu(onOff) {
+    //cameras.main.setBackgroundColor(0x666666);
     menu.visible = onOff;
     if (!onOff) {
       for (let index = 0; index < text.length; index++) {
@@ -481,12 +362,13 @@ class playGame extends Phaser.Scene {
       for (let x = 1; x <= 5; x++) {
         let offset = 0;
         let offset2 = 0;
-        let i = this.getLevel(x, y) - 1;
+        let i = getLevel(x, y) - 1;
         let val = levelMarkerData[i].level;
         if (val > 9)
           offset = -8;
+        levelMarkerData[i].unlocked = true;
         if (levelMarkerData[i].unlocked) {
-          var lvlText = this.add.text(
+          var lvlText = _scene.add.text(
             levelMarkerData[i].x - 25 + offset,
             levelMarkerData[i].y - 30,
             levelMarkerData[i].level, {
@@ -500,7 +382,7 @@ class playGame extends Phaser.Scene {
             offset2 = -8;
           if (val > 99)
             offset2 = -16;
-          var lvlText2 = this.add.text(
+          var lvlText2 = _scene.add.text(
             levelMarkerData[i].x - 25 + offset2,
             levelMarkerData[i].y,
             val + '%', {
@@ -517,11 +399,11 @@ class playGame extends Phaser.Scene {
     textIsShowing = true;
   }
 
-  levelOverPopup() {
+  function  levelOverPopup() {
     rect = new Phaser.Geom.Rectangle(width - 200, height / 2 - 100, 200, 200);
     var pfColor = 0x00CC05;
 
-    rectGraphics = this.add.graphics({
+    rectGraphics = _scene.add.graphics({
       fillStyle: {
         color: pfColor
       }
@@ -529,26 +411,26 @@ class playGame extends Phaser.Scene {
 
     rectGraphics.fillRectShape(rect).setVisible(false);
 
-    popupTitle = this.add.text(rect.x + 20, rect.y + 30, 'LEVEL COMPLETED!', textFormat).setVisible(false);
+    popupTitle = _scene.add.text(rect.x + 20, rect.y + 30, 'LEVEL COMPLETED!', textFormat).setVisible(false);
 
-    tryAgain = this.add.text(rect.x + 30, rect.y + 70, 'Retry', textFormat)
+    tryAgain = _scene.add.text(rect.x + 30, rect.y + 70, 'Retry', textFormat)
       .setInteractive()
-      .on('pointerdown', () => this.retryLevel())
+      .on('pointerdown', () => retryLevel())
       .setVisible(false);
-    tryNext = this.add.text(rect.x + 30, rect.y + 100, 'Next', textFormat)
+    tryNext = _scene.add.text(rect.x + 30, rect.y + 100, 'Next', textFormat)
       .setInteractive()
-      .on('pointerdown', () => this.nextLevel())
+      .on('pointerdown', () => nextLevel())
       .setVisible(false);
-    goToMenu = this.add.text(rect.x + 30, rect.y + 130, 'Go To Menu', textFormat)
+    goToMenu = _scene.add.text(rect.x + 30, rect.y + 130, 'Go To Menu', textFormat)
       .setInteractive()
-      .on('pointerdown', () => this.goToMenu())
+      .on('pointerdown', () => goToMenu())
       .setVisible(false);
   }
 
-  showPopup(passFail, isVisible) {
+  function  showPopup(passFail, isVisible) {
     var pfColor = passFail ? 0x00CC05 : 0xff0000;
     rectGraphics.clear();
-    rectGraphics = this.add.graphics({
+    rectGraphics = _scene.add.graphics({
       fillStyle: {
         color: pfColor
       }
@@ -568,40 +450,40 @@ class playGame extends Phaser.Scene {
     goToMenu.depth = 1;
   }
 
-  retryLevel() {
-    this.resetWorld();
-    this.showPopup(true, false);
-    this.buildLevel(currentLevel);
+  function retryLevel() {
+    resetWorld();
+    showPopup(true, false);
+    buildLevel(currentLevel);
   }
 
-  nextLevel() {
-    this.resetWorld();
-    this.showPopup(true, false);
+  function nextLevel() {
+    resetWorld();
+    showPopup(true, false);
     currentLevel++;
-    this.buildLevel(currentLevel);
+    buildLevel(currentLevel);
   }
 
-  goToMenu() {
-    this.showStatus(false);
-    this.resetWorld();
-    this.showPopup(true, false);
-    this.showMenu(true);
+  function goToMenu() {
+    showStatus(false);
+    resetWorld();
+    showPopup(true, false);
+    showMenu(true);
   }
 
-  resetWorld() {
+  function resetWorld() {
     levelCompleted = false;
     slicesLeft = 3;
     removed = 0;
     totalMass = 0;
-    this.clearBodies();
+    clearBodies();
   }
 
-  buildMenu() {
-    titleShadow = this.add
+  function buildMenu() {
+    titleShadow = _scene.add
       .image(325, 55, 'titleShadow')
       .setScale(0.3)
       .setOrigin(0.5, 0.5);
-    title = this.add
+    title = _scene.add
       .image(320, 50, 'title')
       .setScale(0.3)
       .setOrigin(0.5, 0.5);
@@ -609,12 +491,12 @@ class playGame extends Phaser.Scene {
     let lvlButtons = [];
     for (let y = 1; y <= 4; y++) {
       for (let x = 1; x <= 5; x++) {
-        const lvlButton = this.add
+        const lvlButton = _scene.add
           .image(x * 105, y * 100 + 30, 'level_marker')
           .setScale(0.4)
           .setOrigin(0.5, 0.5)
           .setInteractive()
-          .on('pointerdown', () => this.levelSelected(x, y));
+          .on('pointerdown', () => levelSelected(x, y));
         lvlButtons.push(lvlButton);
         var levelMarker = {
           level: i,
@@ -629,10 +511,9 @@ class playGame extends Phaser.Scene {
         i++;
       }
     }
-    menu = this.add.container(0, 0); //, [titleShadow, title, lvlButtons, levelMarkerData]);
+    menu = _scene.add.container(0, 0); //, [titleShadow, title, lvlButtons, levelMarkerData]);
     menu.add(titleShadow);
     menu.add(title);
     menu.add(lvlButtons);
     menu.visible = false;
   }
-}
