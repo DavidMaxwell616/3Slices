@@ -296,7 +296,7 @@ function startDrawing() {
   }
 
   function  buildLevel(currentLevel) {
-   // cameras.main.setBackgroundColor(0xcccccc);
+   _scene.cameras.main.setBackgroundColor(0xcccccc);
     //matter.world.setBounds();
     const curLvl = levelData[currentLevel - 1];
     const curPolys = curLvl.polygons;
@@ -347,7 +347,7 @@ function startDrawing() {
   }
 
   function   showMenu(onOff) {
-    //cameras.main.setBackgroundColor(0x666666);
+   _scene.cameras.main.setBackgroundColor(0x666666);
     menu.visible = onOff;
     if (!onOff) {
       for (let index = 0; index < text.length; index++) {
