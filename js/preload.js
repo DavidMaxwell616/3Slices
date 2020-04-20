@@ -16,7 +16,7 @@ function showLoader(game) {
   var progressBar = game.add.graphics();
   var progressBox = game.add.graphics();
   progressBox.fillStyle(0x222222, 0.8);
-  progressBox.fillRect(width / 2 - 120, 270, 320, 50);
+  progressBox.fillRect(width / 2 - 160, 270, 320, 50);
   game.load.on('progress', function (value) {});
 
   game.load.on('fileprogress', function (file) {});
@@ -30,7 +30,7 @@ function showLoader(game) {
   game.load.on('progress', function (value) {
     progressBar.clear();
     progressBar.fillStyle(0xff4500, 1);
-    progressBar.fillRect(width / 2 - 110, 280, 300 * value, 30);
+    progressBar.fillRect(width / 2 - 150, 280, 300 * value, 30);
     percentText.setText(parseInt(value * 100) + '%');
   });
 
