@@ -423,7 +423,7 @@ function startDrawing() {
       .setVisible(false);
     goToMenu = _scene.add.text(rect.x + 30, rect.y + 130, 'Go To Menu', textFormat)
       .setInteractive()
-      .on('pointerdown', () => goToMenu())
+      .on('pointerdown', () => gotoMenu())
       .setVisible(false);
   }
 
@@ -463,7 +463,7 @@ function startDrawing() {
     buildLevel(currentLevel);
   }
 
-  function goToMenu() {
+  function gotoMenu() {
     showStatus(false);
     resetWorld();
     showPopup(true, false);
